@@ -1,2 +1,2 @@
 # Computer Architecture Desktop Application
-An application to better understand computer architecture based on visual learning using hands-on experience.
+An application based on visual learning using hands-on experience with the goal to better understand computer architecture.
