@@ -1,5 +1,7 @@
-import "dart:io";
 
+import "dart:io";
+import "dart:async";
+import "dart:convert";
 int aluresult = 0,
     immediate = 0,
     operand1 = 0,
@@ -14,6 +16,7 @@ int aluresult = 0,
     mcode = 0;
 int type = 0, funct3 = 0, funct7 = 0, pc = 0;
 bool Rfwrite = false, Memop = false, op2select = false, isBranch = false;
+List n=[];
 final RF = List<int>.filled(32, 0);
 final b = List<int>.filled(32, 0);
 final im = List<int>.filled(32, 0);
@@ -29,20 +32,21 @@ void dec2bin(int value) {
   int i = 0;
   while (value > 0 && i <= 31) {
     t[i] = value % 2;
-    value = value >> 1;
+    double next=value/2;
+    value=next.toInt();
     i++;
   }
 }
-
 int comp2() {
   int c = t[31];
   if (c == 1) {
     for (int i = 0; i <= 31; i++) {
-      t[i] = 1 - t[i];
+      if(t[i]==1)t[i]=0;
+      else t[i]=1;
     }
     int i = 0;
     while (i <= 31 && t[i] == 1) {
-      b[i] = 0;
+      t[i] = 0;
       i++;
     }
     if (i <= 31) {
@@ -51,7 +55,7 @@ int comp2() {
   }
   int sum = 0;
   for (int i = 31; i >= 0; i--) {
-    sum = (2 * sum) + b[i];
+    sum = (2 * sum) + t[i];
   }
   if (c == 1) {
     sum = (-1) * sum;
@@ -124,45 +128,42 @@ void fetch() {
   if (mcode == 0 || mcode == -285212655) {
     swi_exit();
   }
+  else
+  {dec2bin(mcode);for(int i=0;i<32;i++){b[i]=t[i];}}
 }
 
 void decode() {
-  dec2bin(mcode);
-
+  //finding opcode,funct7,funct3,rs1,rs2,rs
   for (int i = 6; i >= 0; i--) {
     type = (2 * type) + b[i];
   }
   for (int i = 14; i >= 12; i--) {
-    funct3 = (2 * funct3) + 1;
+    funct3 = (2 * funct3) + b[i];
   }
   for (int i = 31; i >= 25; i--) {
-    funct7 = (2 * funct7 + 1);
+    funct7 = (2 * funct7 + b[i]);
   }
   for (int i = 19; i >= 15; i--) {
-    rs1 = (2 * rs1 + 1);
+    rs1 = (2 * rs1 + b[i]);
   }
   for (int i = 24; i >= 20; i--) {
-    rs2 = (2 * rs2 + 1);
+    rs2 = (2 * rs2 + b[i]);
   }
   for (int i = 11; i >= 7; i--) {
-    rd = (2 * rd + 1);
+    rd = (2 * rd + b[i]);
   }
   //immediate bits list
   for (int i = 0; i <= 31; i++) {
     im[i] = 0;
   }
-
   ///i type
   if (type == 19 || type == 3 || type == 103) {
     for (int i = 20; i <= 31; i++) {
       im[i - 20] = b[i];
     }
-    for (int i = 12; i <= 32; i++) {
+    for (int i = 12; i <= 31; i++) {
       im[i] = im[11];
     }
-    //control
-    op2select = true;
-    Rfwrite = true;
   }
 
   ///j type
@@ -175,24 +176,15 @@ void decode() {
     for (int i = 21; i <= 30; i++) {
       im[i - 20] = b[i];
     }
-    for (int i = 21; i <= 32; i++) {
+    for (int i = 21; i <= 31; i++) {
       im[i] = im[20];
     }
-    //control
-
-    Rfwrite = true;
   }
   //u type
   else if (type == 55 || type == 23) {
     for (int i = 12; i <= 31; i++) {
       im[i] = b[i];
     }
-    //control
-    Rfwrite = true;
-    if (type == 55)
-      resultselect = 4; //lui
-    else
-      resultselect = 3; //auipc
   }
 
   ///b type
@@ -205,11 +197,12 @@ void decode() {
     for (int i = 25; i <= 30; i++) {
       im[i - 20] = b[i];
     }
-    for (int i = 13; i <= 32; i++) {
+    for (int i = 13; i <= 31; i++) {
       im[i] = im[12];
     }
   }
   //s type
+  else if(type==35)
   {
     for (int i = 7; i <= 11; i++) {
       im[i - 7] = b[i];
@@ -217,16 +210,22 @@ void decode() {
     for (int i = 25; i <= 30; i++) {
       im[i - 20] = b[i];
     }
-    for (int i = 12; i <= 32; i++) {
+    for (int i = 12; i <= 31; i++) {
       im[i] = im[11];
     }
-    op2select = true;
-    Memop = true;
   }
+//Rfwrite
+if(type!=99 && type!=35){Rfwrite=true;}
 //resultselect
   if (type == 3) resultselect = 1; //load mode
-  if (type == 111 || type == 103) resultselect = 2; //jal|jalr
+  else if (type == 111 || type == 103) resultselect = 2; //jal|jalr pc+4
+  else if(type==23)resultselect=3;
+  else if(type==55)resultselect=4;
 
+//op2select
+if(type==19 || type==3 || type==35)op2select=true;
+//MEmop
+if(type==35)Memop=true;
 //ALUOP
   if (type == 99 || (type == 51 && funct3 == 0 && funct7 == 32)) {
     aluop = 1;
@@ -237,12 +236,13 @@ void decode() {
     aluop = 3; //or
   else if (type == 51 && funct3 == 4)
     aluop = 4; //xor
-  else if (type == 51) {
+    if (type == 51) {
     if (funct3 == 1) aluop = 5; //sll
-    if (funct3 == 5 && funct7 == 32)
+    else if (funct3 == 5 && funct7 == 32)
       aluop = 7; //sra
-    else
+    else if(funct3==5 && funct7==0)
       aluop = 6; //srl
+    else if(funct3==2)aluop=8; 
   }
 //immediate sign extension
   for (int i = 0; i < 32; i++) {
@@ -261,12 +261,16 @@ void execute() {
     case 0:
       {
         aluresult = temp + operand1;
+        if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
+        else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
       }
       break;
 
     case 1:
       {
         aluresult = operand1 - temp;
+        if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
+        else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
       }
       break;
 
@@ -290,20 +294,24 @@ void execute() {
 
     case 5:
       {
-        aluresult = operand1 << temp;
-      }
-      break;
-
+        aluresult=operand1;
+        for(int i=0;i<temp;i++){
+          aluresult=aluresult<<1;
+          if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
+          else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
+        }
+      }break;
     //list use for srl
     case 6:
       {
         dec2bin(operand1);
         int i = 0;
-        for (; i <= 31 - temp; i++) {
+        for (; i <= 31 - temp && i<=31; i++) {
           t[i] = t[i + temp];
         }
         while (i <= 31) {
           t[i] = 0;
+          i++;
         }
         aluresult = comp2();
       }
@@ -314,17 +322,25 @@ void execute() {
         aluresult = operand1 >> temp;
       }
       break;
+
+    case 8:
+      {
+        if(operand1<temp)aluresult=1;
+        else aluresult=0;
+      }break;
   }
   //branch
-  branchtarget = pc + immediate;
-  if (type == 111)
+  if(type==99 || type==111)branchtarget = pc + immediate;
+  else if(type==103)branchtarget=aluresult;
+  if (type == 111 || type==103)
     isBranch = true;
   else if (type == 99) {
-    if (funct3 == 0 && aluresult == 0) isBranch = true;
-    if (funct3 == 1 && aluresult != 0) isBranch = true;
-    if (funct3 == 4 && aluresult < 0) isBranch = true;
-    if (funct3 == 5 && aluresult >= 0) isBranch = true;
+    if (funct3 == 0 && operand1==operand2) isBranch = true;
+    else if (funct3 == 1 && operand1!=temp) isBranch = true;
+    else if (funct3 == 4 && operand1<temp) isBranch = true;
+    else if (funct3 == 5 && operand1 >= temp) isBranch = true;
   }
+
 }
 
 void memory() {
@@ -333,33 +349,29 @@ void memory() {
   for (int i = 0; i < 32; i++) {
     t[i] = 0;
   }
-  if (Memop == 0) {
-    if (MEM[Eaddress] != null) {
+  if (Memop == false) {
+   
       if (funct3 == 0) {
         lb(Eaddress, index);
       } else if (funct3 == 1) {
         lh(Eaddress, index);
-      } else {
+      } else if(funct3==2) {
         lw(Eaddress);
       }
-    } else
-      loadData = 0;
   } else {
-    if (MEM[Eaddress] == null)
-      MEM[Eaddress] = 0;
-    else {
       if (funct3 == 0) {
         sb(Eaddress, index);
       } else if (funct3 == 1) {
         sh(Eaddress, index);
-      } else {
+      } else if(funct3==2){
         sw(Eaddress);
       }
-    }
+    
   }
 }
 
 void write_back() {
+
   int word = aluresult;
   if (Rfwrite == true) {
     if (resultselect == 1)
@@ -369,8 +381,10 @@ void write_back() {
     else if (resultselect == 3)
       word = pc + immediate;
     else if (resultselect == 4) word = immediate;
-
+    
+    if(rd!=0)
     RF[rd] = word;
+    else RF[0]=0;
   }
   if (isBranch == true) {
     pc = branchtarget;
@@ -380,15 +394,80 @@ void write_back() {
 
 void reset_proc() {
   aluresult = 0; immediate = 0; operand1 = 0;  operand2 = 0; loadData = 0;  aluop = 0;  branchtarget = 0;  resultselect = 0;  rs1 = 0;
-  rs2 = 0;  rd = 0;  type = 0;  funct3 = 0;  funct7 = 0;  pc = 0;
+  rs2 = 0;  rd = 0;  type = 0;  funct3 = 0;  funct7 = 0;
   Rfwrite = false;   Memop = false;  op2select = false;  isBranch = false; 
   for (int i = 0; i <= 31; i++) {
-    RF[i] = 0;  b[i] = 0;  im[i] = 0;  t[i] = 0;
+   b[i] = 0;  im[i] = 0;  t[i] = 0;
   }
 }
 
 void swi_exit() {
+  //write_datamemory();
+  print(RF);
   exit(0);
 }
-
-void main() {}
+void write_datamemory(){
+ 
+}
+void run_riscvsim(){
+  RF[23]=7;
+  RF[24]=4;
+  while(true){
+    fetch();
+    decode();
+    execute();
+    memory();
+    write_back();
+     reset_proc();
+  }
+}
+void load_progmem(){
+   for(int i=0;i<n.length;i++)
+   {
+     String s=n[i];
+     int address=0,instruct=0;
+     int j=0;
+     while(j<s.length && s.codeUnitAt(j)!=120){j++;}
+     j++;
+     while(j<s.length){
+        int asc=s.codeUnitAt(j);
+        if(asc==32)break;
+        else{
+          if(asc>=65)asc=asc-55;
+          else asc=asc-48;
+        }
+        address=16*(address)+asc;
+        j++;
+     }
+     while(j<s.length && s.codeUnitAt(j)!=120){j++;}
+     j++;
+     while(j<s.length){
+        int asc=s.codeUnitAt(j);
+        if(asc==32)break;
+        else{
+          if(asc>=65)asc=asc-55;
+          else asc=asc-48;
+        }
+        instruct=16*(instruct)+asc;
+        j++;
+     }
+      dec2bin(instruct);
+      instruct=comp2();
+      dec2bin(address);
+      address=comp2();
+      MEM[address]=instruct;
+   }
+}
+void main() {
+  var path='test.txt';
+  
+  var file= new File(path);
+  List<String> s=file.readAsLinesSync();
+  for(int i=0;i<s.length;i++)
+  {n.add(s[i]);}
+  reset_proc();
+  RF[2]=2147483644;
+  RF[5]=6;
+  load_progmem();
+  run_riscvsim();
+}
