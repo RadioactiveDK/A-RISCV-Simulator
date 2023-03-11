@@ -414,7 +414,16 @@ import "dart:convert";
   }
 
   void write_datamemory(){
-
+    
+     myOutfile.writeAsStringSync("address       Data\n",mode:FileMode.append);
+    for(var i in MEM.keys){
+    String adress=i.toRadixString(16);
+    int val=MEM[i]??0;
+    if(val<0){val=(1<<32)+val;}
+    adress="0x"+adress+"       0x"+val.toRadixString(16)+"\n";
+     myOutfile.writeAsStringSync(adress,mode:FileMode.append);
+  }
+ 
   }
 
   void run_riscvsim(){
