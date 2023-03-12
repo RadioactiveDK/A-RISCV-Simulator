@@ -214,7 +214,11 @@ class _SingleCycleState extends State<SingleCycle> {
     }
     else
     {dec2bin(mcode);for(int i=0;i<32;i++){b[i]=t[i];}}
-    outputTxt+='FETCH: Read instruction 0x${'0'*(8-(MEM[pc]??0).toRadixString(16).length)}${(MEM[pc]??0).toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
+    int instr=MEM[pc]??0;
+    if(instr<0){
+      instr+=(1<<32);
+    }
+    outputTxt+='FETCH: Read instruction 0x${'0'*(8-instr.toRadixString(16).length)}${instr.toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
   }
 
   void decode() {
