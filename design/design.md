@@ -1,8 +1,6 @@
 # Design Document: Functional Simulator for RISCV-32I ISA 
 
-The document describes the design aspect of riscvSIM, a functional simulator for subset of  
-
-RISCV-32I instruction set implemented using Dart language. 
+The document describes the design aspect of riscvSIM, a functional simulator for subset of RISCV-32I instruction set implemented using Dart programming language. 
 
 ## Input/Output: 
 
