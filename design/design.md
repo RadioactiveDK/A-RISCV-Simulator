@@ -61,7 +61,7 @@ Writeback prints:
 
 ### Data structure 
 
-Registers, memories, intermediate output for each stage of instruction execution are declared globally so that these are accessible to all functions as dart language does not support argument passing by reference to functions. Registers use “list<int>” data structure provided by dart language. Memory is implemented using "Map<int ,int>" data structure, keys represent addresses in memory and values correspond to the data stored at those addresses. Other intermediates like control, operand values, aluresult etc. are implemented with help of global int and boolean variables. 
+Registers, memories, intermediate output for each stage of instruction execution are declared globally so that these are accessible to all functions as dart language does not support argument passing by reference to functions. Registers use “list<int>” data structure provided by dart language. Register x2 is initialised with stack pointer 0x7FFFFFFC. Memory is implemented using "Map<int ,int>" data structure, keys represent addresses in memory and values correspond to the data stored at those addresses. Other intermediates like control, operand values, aluresult etc. are implemented with help of global int and boolean variables. 
 
 
 ### Simulator flow: 
