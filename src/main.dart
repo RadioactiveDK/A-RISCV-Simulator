@@ -80,7 +80,7 @@ class _SingleCycleState extends State<SingleCycle> {
   String outputTxt='',displayTxt='';
   List<String>outputLines = [];
   int clock=0,
-      printStep=0,
+      displayStep=0,
       aluresult = 0,
       immediate = 0,
       operand1 = 0,
@@ -506,7 +506,7 @@ class _SingleCycleState extends State<SingleCycle> {
   void run_riscvsim(File f){
     pc=0;
     clock=0;
-    printStep=0;
+    displayStep=0;
     while(running){
       fetch(f);
       decode();
@@ -636,9 +636,9 @@ class _SingleCycleState extends State<SingleCycle> {
               children: [
                 ElevatedButton(
                   onPressed: (){
-                    if(!outputRan && printStep<outputLines.length) {
-                      printStep++;
-                      displayTxt += '${outputLines[printStep]}\n\n';
+                    if(!outputRan && displayStep<outputLines.length) {
+                      displayStep++;
+                      displayTxt += '${outputLines[displayStep]}\n\n';
                       displayOutput();
                     }
                   },
@@ -653,7 +653,16 @@ class _SingleCycleState extends State<SingleCycle> {
                     }
                   },
                   child:const Text('Run')
-                )
+                ),
+                ElevatedButton(
+                    onPressed: (){
+                      outputRan = false;
+                      displayTxt = '${outputLines[0]}\n\n';
+                      displayStep=0;
+                      displayOutput();
+                    },
+                    child:const Text('Reset')
+                ),
               ],
             ),
             Expanded(
