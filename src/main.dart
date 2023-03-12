@@ -214,7 +214,11 @@ class _SingleCycleState extends State<SingleCycle> {
     }
     else
     {dec2bin(mcode);for(int i=0;i<32;i++){b[i]=t[i];}}
-    outputTxt+='FETCHED instruction 0x${'0'*(8-(MEM[pc]??0).toRadixString(16).length)}${(MEM[pc]??0).toRadixString(16)} from address 0x${pc.toRadixString(16)}\n';
+    int instr=MEM[pc]??0;
+    if(instr<0){
+      instr+=(1<<32);
+    }
+    outputTxt+='FETCH: Read instruction 0x${'0'*(8-instr.toRadixString(16).length)}${instr.toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
   }
 
   void decode() {
@@ -287,8 +291,7 @@ class _SingleCycleState extends State<SingleCycle> {
       }
     }
     //s type
-    else if(type==35)
-    {
+    else if(type==35) {
       for (int i = 7; i <= 11; i++) {
         im[i - 7] = b[i];
       }
@@ -337,15 +340,76 @@ class _SingleCycleState extends State<SingleCycle> {
 //registers
     operand1 = RF[rs1];
     operand2 = RF[rs2];
+    //message
+    outputTxt+="DECODE: Operation is ";
+    if(type==51)
+    {
+      if (funct3==0){
+        if(funct7==0){outputTxt+="ADD, ";}
+        else outputTxt+="SUB, ";
+      }
+      else if(funct3==7)outputTxt+="AND, ";
+      else if(funct3==6)outputTxt+="OR, ";
+      else if(funct3==4)outputTxt+="XOR, ";
+      else if(funct3==1)outputTxt+="SLL, ";
+      else if(funct3==2)outputTxt+="SLT, ";
+      else if(funct3==5){
+        if(funct7==0){outputTxt+="SRL, ";}
+        else outputTxt+="SRA, ";
+      }
+      outputTxt+="rs1 is x${rs1}, rs2 is x${rs2} and destination register is x${rd}.\n";
+    }
+    else if(type==19)
+    {
+      if(funct3==0){outputTxt+="ADDI, ";}
+      else if(funct3==6){outputTxt+="ORI, ";}
+      else if(funct3==7){outputTxt+="ANDI, ";}
+      outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+    }
+    else if(type==3)
+    {
+      if(funct3==0){outputTxt+="LB, ";}
+      else if(funct3==1){outputTxt+="LH, ";}
+      else if(funct3==2){outputTxt+="LW, ";}
+      outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+    }
+    else if(type==103){
+      outputTxt+="JALR, rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+    }
+    else if(type==35){
+      if(funct3==0){outputTxt+="SB, ";}
+      else if(funct3==1){outputTxt+="SH, ";}
+      else if(funct3==2){outputTxt+="SW, ";}
+      outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+    }
+    else if(type==99){
+      if(funct3==0){outputTxt+="BEQ, ";}
+      else if(funct3==1){outputTxt+="BNE, ";}
+      else if(funct3==4){outputTxt+="BLT, ";}
+      else if(funct3==5){outputTxt+="BGE, ";}
+      outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+    }
+    else if(type==111){
+      outputTxt+="JAL, immediate is ${immediate} and rd is x${rd}.\n";
+    }
+    else if(type==55)
+    {
+      outputTxt+="LUI, immediate is ${immediate} and rd is x${rd}.\n";
+    }
+    else if(type==23){
+      outputTxt+="AUIPC, immediate is ${immediate} and rd is x${rd}.\n";
+    }
 
   }
 
   void execute() {
     int temp = operand2;
+    outputTxt+="EXECUTE: ";
     if (op2select == true) temp = immediate;
     switch (aluop) {
       case 0:
         {
+          outputTxt+="ADD ${operand1} and ${temp}.\n";
           aluresult = temp + operand1;
           if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
           else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
@@ -354,6 +418,7 @@ class _SingleCycleState extends State<SingleCycle> {
 
       case 1:
         {
+          outputTxt+="SUBTRACT ${temp} from ${operand1}.\n";
           aluresult = operand1 - temp;
           if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
           else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
@@ -362,24 +427,28 @@ class _SingleCycleState extends State<SingleCycle> {
 
       case 2:
         {
+          outputTxt+="LOGICAL 'AND' of ${operand1} and ${temp}.\n";
           aluresult = operand1 & temp;
         }
         break;
 
       case 3:
         {
+          outputTxt+="LOGICAL 'OR' of ${operand1} and ${temp}.\n";
           aluresult = operand1 | temp;
         }
         break;
 
       case 4:
         {
+          outputTxt+="LOGICAL 'XOR' of ${operand1} and ${temp}.\n";
           aluresult = operand1 ^ temp;
         }
         break;
 
       case 5:
         {
+          outputTxt+="SHIFT left ${operand1} ${temp} times.\n";
           aluresult=operand1;
           for(int i=0;i<temp;i++){
             aluresult=aluresult<<1;
@@ -390,6 +459,7 @@ class _SingleCycleState extends State<SingleCycle> {
     //list use for srl
       case 6:
         {
+          outputTxt+="LOGICAL SHIFT right ${operand1} ${temp} times.\n";
           dec2bin(operand1);
           int i = 0;
           for (; i <= 31 - temp && i<=31; i++) {
@@ -405,12 +475,14 @@ class _SingleCycleState extends State<SingleCycle> {
 
       case 7:
         {
+          outputTxt+="ARITHMETIC SHIFT right ${operand1} ${temp} times.\n";
           aluresult = operand1 >> temp;
         }
         break;
 
       case 8:
         {
+          outputTxt+="SET less than ${operand1} ${temp} times.\n";
           if(operand1<temp)aluresult=1;
           else aluresult=0;
         }break;
@@ -432,10 +504,15 @@ class _SingleCycleState extends State<SingleCycle> {
   void memory() {
     int Eaddress = aluresult - (aluresult % 4);
     int index = aluresult % 4;
+    outputTxt+="MEMORY: ";
     for (int i = 0; i < 32; i++) {
       t[i] = 0;
     }
     if (Memop == false) {
+
+      if(type==3)
+      {outputTxt+="Load from address 0x${aluresult.toRadixString(16)}.\n";}
+      else outputTxt+="No memory operation.\n";
 
       if (funct3 == 0) {
         lb(Eaddress, index);
@@ -445,6 +522,8 @@ class _SingleCycleState extends State<SingleCycle> {
         lw(Eaddress);
       }
     } else {
+      outputTxt+="Store at address 0x${aluresult.toRadixString(16)}.\n";
+
       if (funct3 == 0) {
         sb(Eaddress, index);
       } else if (funct3 == 1) {
@@ -458,8 +537,13 @@ class _SingleCycleState extends State<SingleCycle> {
 
   void write_back() {
 
+    outputTxt+="WRITEBACK: ";
+
     int word = aluresult;
     if (Rfwrite == true) {
+
+      outputTxt+="Write to x${rd}. ";
+
       if (resultselect == 1)
         word = loadData;
       else if (resultselect == 2)
@@ -476,6 +560,8 @@ class _SingleCycleState extends State<SingleCycle> {
       pc = branchtarget;
     } else
       pc = pc + 4;
+
+    outputTxt+="PC is updated to 0x${pc.toRadixString(16)}.\n";
   }
 
   void reset_proc() {
@@ -683,7 +769,7 @@ class _SingleCycleState extends State<SingleCycle> {
                   scrollDirection: Axis.vertical,
                   child: Text(
                     displayTxt,
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.left,
                     style: const TextStyle(
                       color: Colors.black,
                       fontSize: 18.0,
