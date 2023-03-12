@@ -401,12 +401,12 @@ class _SingleCycleState extends State<SingleCycle> {
 
   void execute() {
     int temp = operand2;
-    outputText+="DECODE: ";
+    outputTxt+="DECODE: ";
     if (op2select == true) temp = immediate;
     switch (aluop) {
     case 0:
       {
-        outputText+="ADD ${operand1} and ${temp}.\n ";
+        outputTxt+="ADD ${operand1} and ${temp}.\n ";
         aluresult = temp + operand1;
         if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
         else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
@@ -415,7 +415,7 @@ class _SingleCycleState extends State<SingleCycle> {
 
     case 1:
       {
-        outputText+="SUBTRACT ${temp} from ${operand1}.\n ";
+        outputTxt+="SUBTRACT ${temp} from ${operand1}.\n ";
         aluresult = operand1 - temp;
         if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
         else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
@@ -424,28 +424,28 @@ class _SingleCycleState extends State<SingleCycle> {
 
     case 2:
       {
-        outputText+="LOGICAL 'AND' of ${operand1} and ${temp}.\n ";
+        outputTxt+="LOGICAL 'AND' of ${operand1} and ${temp}.\n ";
         aluresult = operand1 & temp;
       }
       break;
 
     case 3:
       {
-        outputText+="LOGICAL 'OR' of ${operand1} and ${temp}.\n ";
+        outputTxt+="LOGICAL 'OR' of ${operand1} and ${temp}.\n ";
         aluresult = operand1 | temp;
       }
       break;
 
     case 4:
       {
-        outputText+="LOGICAL 'XOR' of ${operand1} and ${temp}.\n ";
+        outputTxt+="LOGICAL 'XOR' of ${operand1} and ${temp}.\n ";
         aluresult = operand1 ^ temp;
       }
       break;
 
     case 5:
       {
-        outputText+="SHIFT left ${operand1} ${temp} times.\n ";
+        outputTxt+="SHIFT left ${operand1} ${temp} times.\n ";
         aluresult=operand1;
         for(int i=0;i<temp;i++){
           aluresult=aluresult<<1;
@@ -456,7 +456,7 @@ class _SingleCycleState extends State<SingleCycle> {
     //list use for srl
     case 6:
       {
-        outputText+="LOGICAL SHIFT right ${operand1} ${temp} times.\n ";
+        outputTxt+="LOGICAL SHIFT right ${operand1} ${temp} times.\n ";
         dec2bin(operand1);
         int i = 0;
         for (; i <= 31 - temp && i<=31; i++) {
@@ -472,14 +472,14 @@ class _SingleCycleState extends State<SingleCycle> {
 
     case 7:
       {
-        outputText+="ARITHMETIC SHIFT right ${operand1} ${temp} times.\n ";
+        outputTxt+="ARITHMETIC SHIFT right ${operand1} ${temp} times.\n ";
         aluresult = operand1 >> temp;
       }
       break;
 
     case 8:
       {
-        outputText+="SET less than ${operand1} ${temp} times.\n ";
+        outputTxt+="SET less than ${operand1} ${temp} times.\n ";
         if(operand1<temp)aluresult=1;
         else aluresult=0;
       }break;
