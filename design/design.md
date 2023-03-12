@@ -29,21 +29,21 @@ The execution of instruction continues till it reaches instruction “swi 0x11�
 
 Along with the execution of instructions, the simulator also prints messages describing what actions it is performing in each stage, with the help of update in the structures that change in that stage. For example, for the third instruction above the following messages are printed. 
 
-Fetch prints: 
-- “FETCH: Fetch instruction 0x00938533 from address 0x8”  
+Fetch prints:
+`FETCH: Fetch instruction 0x00938533 from address 0x8`  
 
 Decode prints:
-- “DECODE: Operation is ADD, first source register x7, second source register x9, destination register is x10” 
-- “DECODE:  Read registers x7 = 4, x9 = 12” 
+`DECODE: Operation is ADD, first source register x7, second source register x9, destination register is x10`
+`DECODE:  Read registers x7 = 4, x9 = 12`
 
 Execute prints:
-- “EXECUTE: ADD 4 and 12” 
+`EXECUTE: ADD 4 and 12`
 
 Memory prints:
-- “MEMORY: No memory operation” 
+`MEMORY: No memory operation`
 
 Writeback prints:
-- “WRITEBACK: write 16 to x10” 
+`WRITEBACK: write 16 to x10`
 
 ## Design of Simulator 
 ### Data structure
