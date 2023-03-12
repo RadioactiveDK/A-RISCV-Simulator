@@ -337,84 +337,153 @@ class _SingleCycleState extends State<SingleCycle> {
 //registers
     operand1 = RF[rs1];
     operand2 = RF[rs2];
+    //message
+    outputTxt+="Operation is ";
+  if(type==51)
+  {
+    if (funct3==0){
+      if(funct7==0){outputTxt+="ADD, ";}
+      else outputTxt+="SUB, ";
+    }
+    else if(funct3==7)outputTxt+="AND, ";
+    else if(funct3==6)outputTxt+="OR, ";
+    else if(funct3==4)outputTxt+="XOR, ";
+    else if(funct3==1)outputTxt+="SLL, ";
+    else if(funct3==2)outputTxt+="SLT, ";
+    else if(funct3==5){
+      if(funct7==0){outputTxt+="SRL, ";}
+      else outputTxt+="SRA, ";
+      }
+     outputTxt+="rs1 is x${rs1}, rs2 is x${rs2} and destination register is x${rd}.\n ";
+  }
+  else if(type==19)
+  {
+    if(funct3==0){outputTxt+="ADDI, ";}
+    else if(funct3==6){outputTxt+="ORI, ";}
+    else if(funct3==7){outputTxt+="ANDI, ";}
+    outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n ";
+  }
+  else if(type==3)
+  {
+    if(funct3==0){outputTxt+="LB, ";}
+    else if(funct3==1){outputTxt+="LH, ";}
+    else if(funct3==2){outputTxt+="LW, ";}
+    outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n ";
+  }
+  else if(type==103){
+    outputTxt+="JALR, rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n ";
+  }
+  else if(type==35){
+    if(funct3==0){outputTxt+="SB, ";}
+    else if(funct3==1){outputTxt+="SH, ";}
+    else if(funct3==2){outputTxt+="SW, ";}
+    outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n ";
+  }
+  else if(type==99){
+    if(funct3==0){outputTxt+="BEQ, ";}
+    else if(funct3==1){outputTxt+="BNE, ";}
+    else if(funct3==4){outputTxt+="BLT, ";}
+    else if(funct3==5){outputTxt+="BGE, ";}
+    outputTxt+="rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n ";
+  }
+  else if(type==111){
+    outputTxt+="JAL, immediate is ${immediate} and rd is x${rd}.\n ";
+  }
+  else if(type==55)
+  {
+    outputTxt+="LUI, immediate is ${immediate} and rd is x${rd}.\n ";
+  }
+  else if(type==23){
+    outputTxt+="AUIPC, immediate is ${immediate} and rd is x${rd}.\n ";
+  }
 
   }
 
   void execute() {
     int temp = operand2;
+    outputText+="DECODE: ";
     if (op2select == true) temp = immediate;
     switch (aluop) {
-      case 0:
-        {
-          aluresult = temp + operand1;
+    case 0:
+      {
+        outputText+="ADD ${operand1} and ${temp}.\n ";
+        aluresult = temp + operand1;
+        if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
+        else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
+      }
+      break;
+
+    case 1:
+      {
+        outputText+="SUBTRACT ${temp} from ${operand1}.\n ";
+        aluresult = operand1 - temp;
+        if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
+        else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
+      }
+      break;
+
+    case 2:
+      {
+        outputText+="LOGICAL 'AND' of ${operand1} and ${temp}.\n ";
+        aluresult = operand1 & temp;
+      }
+      break;
+
+    case 3:
+      {
+        outputText+="LOGICAL 'OR' of ${operand1} and ${temp}.\n ";
+        aluresult = operand1 | temp;
+      }
+      break;
+
+    case 4:
+      {
+        outputText+="LOGICAL 'XOR' of ${operand1} and ${temp}.\n ";
+        aluresult = operand1 ^ temp;
+      }
+      break;
+
+    case 5:
+      {
+        outputText+="SHIFT left ${operand1} ${temp} times.\n ";
+        aluresult=operand1;
+        for(int i=0;i<temp;i++){
+          aluresult=aluresult<<1;
           if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
           else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
         }
-        break;
-
-      case 1:
-        {
-          aluresult = operand1 - temp;
-          if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
-          else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
-        }
-        break;
-
-      case 2:
-        {
-          aluresult = operand1 & temp;
-        }
-        break;
-
-      case 3:
-        {
-          aluresult = operand1 | temp;
-        }
-        break;
-
-      case 4:
-        {
-          aluresult = operand1 ^ temp;
-        }
-        break;
-
-      case 5:
-        {
-          aluresult=operand1;
-          for(int i=0;i<temp;i++){
-            aluresult=aluresult<<1;
-            if(aluresult>2147483647){aluresult=-2147483648+(aluresult-2147483648);}
-            else if(aluresult<-2147483648){aluresult=2147483647+(2147483649+aluresult);}
-          }
-        }break;
+      }break;
     //list use for srl
-      case 6:
-        {
-          dec2bin(operand1);
-          int i = 0;
-          for (; i <= 31 - temp && i<=31; i++) {
-            t[i] = t[i + temp];
-          }
-          while (i <= 31) {
-            t[i] = 0;
-            i++;
-          }
-          aluresult = comp2();
+    case 6:
+      {
+        outputText+="LOGICAL SHIFT right ${operand1} ${temp} times.\n ";
+        dec2bin(operand1);
+        int i = 0;
+        for (; i <= 31 - temp && i<=31; i++) {
+          t[i] = t[i + temp];
         }
-        break;
-
-      case 7:
-        {
-          aluresult = operand1 >> temp;
+        while (i <= 31) {
+          t[i] = 0;
+          i++;
         }
-        break;
+        aluresult = comp2();
+      }
+      break;
 
-      case 8:
-        {
-          if(operand1<temp)aluresult=1;
-          else aluresult=0;
-        }break;
-    }
+    case 7:
+      {
+        outputText+="ARITHMETIC SHIFT right ${operand1} ${temp} times.\n ";
+        aluresult = operand1 >> temp;
+      }
+      break;
+
+    case 8:
+      {
+        outputText+="SET less than ${operand1} ${temp} times.\n ";
+        if(operand1<temp)aluresult=1;
+        else aluresult=0;
+      }break;
+  }
     //branch
     if(type==99 || type==111)branchtarget = pc + immediate;
     else if(type==103)branchtarget=aluresult;
@@ -432,11 +501,16 @@ class _SingleCycleState extends State<SingleCycle> {
   void memory() {
     int Eaddress = aluresult - (aluresult % 4);
     int index = aluresult % 4;
+    outputTxt+="MEMORY: ";
     for (int i = 0; i < 32; i++) {
       t[i] = 0;
     }
     if (Memop == false) {
-
+      
+      if(type==3)
+      {outputTxt+="Load from adress 0x${aluresult.toRadixString(16)}\n";}
+      else outputTxt+="no memory operation.\n";
+      
       if (funct3 == 0) {
         lb(Eaddress, index);
       } else if (funct3 == 1) {
@@ -445,6 +519,8 @@ class _SingleCycleState extends State<SingleCycle> {
         lw(Eaddress);
       }
     } else {
+      outputTxt+="Store at adress 0x${aluresult.toRadixString(16)}\n";
+      
       if (funct3 == 0) {
         sb(Eaddress, index);
       } else if (funct3 == 1) {
@@ -457,9 +533,14 @@ class _SingleCycleState extends State<SingleCycle> {
   }
 
   void write_back() {
-
+    
+    outputTxt+="WRITEBACK: ";
+    
     int word = aluresult;
     if (Rfwrite == true) {
+      
+      outputTxt+="writeback to x${rd}.";
+      
       if (resultselect == 1)
         word = loadData;
       else if (resultselect == 2)
@@ -476,6 +557,8 @@ class _SingleCycleState extends State<SingleCycle> {
       pc = branchtarget;
     } else
       pc = pc + 4;
+    
+    outputTxt+="PC is updated to 0x${pc.toRadixString(16)}. \n";
   }
 
   void reset_proc() {
