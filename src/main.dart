@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import "dart:async";
-import "dart:convert";
 import 'package:path/path.dart';
 
 void main() {
@@ -28,7 +26,7 @@ class MyHomeScreen extends StatelessWidget{
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => SingleCycle(),
+                    builder: (context) => const SingleCycle(),
                   ),
                 );
               },
@@ -39,13 +37,13 @@ class MyHomeScreen extends StatelessWidget{
       appBar: AppBar(
         title: const Text('Computer Architecture'),
       ),
-      body: MyHome()
+      body: const HomeBody()
     );
   }
 }
 
-class MyHome extends StatelessWidget{
-  const MyHome({super.key});
+class HomeBody extends StatelessWidget{
+  const HomeBody({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +69,19 @@ class MyHome extends StatelessWidget{
 
 
 
-class SingleCycle extends StatelessWidget{
-  SingleCycle({super.key});
+class SingleCycle extends StatefulWidget {
+  const SingleCycle({Key? key}) : super(key: key);
 
-  int aluresult = 0,
+  @override
+  State<SingleCycle> createState() => _SingleCycleState();
+}
+
+class _SingleCycleState extends State<SingleCycle> {
+  String outputTxt='',displayTxt='';
+  List<String>outputLines = [];
+  int clock=0,
+      displayStep=0,
+      aluresult = 0,
       immediate = 0,
       operand1 = 0,
       operand2 = 0,
@@ -87,7 +94,8 @@ class SingleCycle extends StatelessWidget{
       rd = 0,
       mcode = 0;
   int type = 0, funct3 = 0, funct7 = 0, pc = 0;
-  bool Rfwrite = false,
+  bool outputRan = false,
+      Rfwrite = false,
       Memop = false,
       op2select = false,
       isBranch = false,
@@ -148,7 +156,6 @@ class SingleCycle extends StatelessWidget{
   void lb(int Eaddress, int index) {
     int element = MEM[Eaddress] ?? 0;
     loadData = ((element >> (8 * index)) & 0xFF);
-    int j = 0;
     for (int i = 0; i <= 7; i++) {
       t[i] = (loadData >> i) & 1;
     }
@@ -161,7 +168,6 @@ class SingleCycle extends StatelessWidget{
   void lh(int Eaddress, int index) {
     int element = MEM[Eaddress] ?? 0;
     loadData = ((element >> (8 * index)) & 0xFFFF);
-    int j = 0;
     for (int i = 0; i <= 15; i++) {
       t[i] = (loadData >> i) & 1;
     }
@@ -208,6 +214,7 @@ class SingleCycle extends StatelessWidget{
     }
     else
     {dec2bin(mcode);for(int i=0;i<32;i++){b[i]=t[i];}}
+    outputTxt+='FETCHED instruction 0x${'0'*(8-(MEM[pc]??0).toRadixString(16).length)}${(MEM[pc]??0).toRadixString(16)} from address 0x${pc.toRadixString(16)}\n';
   }
 
   void decode() {
@@ -330,6 +337,7 @@ class SingleCycle extends StatelessWidget{
 //registers
     operand1 = RF[rs1];
     operand2 = RF[rs2];
+
   }
 
   void execute() {
@@ -496,6 +504,9 @@ class SingleCycle extends StatelessWidget{
   }
 
   void run_riscvsim(File f){
+    pc=0;
+    clock=0;
+    displayStep=0;
     while(running){
       fetch(f);
       decode();
@@ -503,7 +514,10 @@ class SingleCycle extends StatelessWidget{
       memory();
       write_back();
       reset_proc();
+      clock++;
+      outputTxt+='CLOCK CYCLES ELAPSED = $clock\n\n';
     }
+    outputLines = outputTxt.split('\n\n');
   }
 
   void load_progmem(){
@@ -544,8 +558,24 @@ class SingleCycle extends StatelessWidget{
     }
   }
 
+  void singleCycleCode(PlatformFile inputFile)async{
+    // print(Directory(inputFile.path!).parent.path);
+    // print(basenameWithoutExtension(inputFile.path!));
+    String strPath ='${Directory(inputFile.path!).parent.path}\\${basenameWithoutExtension(inputFile.path!)}_output.txt';
+    // print(strPath);
+    File outputFile = File(strPath);
 
-
+    File file = File(inputFile.name);
+    List<String> s=file.readAsLinesSync();
+    for(int i=0;i<s.length;i++)
+    {n.add(s[i]);}
+    reset_proc();
+    running=true;
+    outputRan = false;
+    RF[2]=2147483644;
+    load_progmem();
+    run_riscvsim(outputFile);
+  }
 
   void myFilePicker()async{
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -554,82 +584,113 @@ class SingleCycle extends StatelessWidget{
     );
     if (result==null) return;
     PlatformFile myFile = result.files.single;
-    SingleCycleCode(myFile);
+    outputTxt='CLOCK CYCLES ELAPSED = 0\n\n';
+    displayTxt='CLOCK CYCLES ELAPSED = 0\n\n';
+    singleCycleCode(myFile);
+    displayOutput();
   }
 
-  void SingleCycleCode(PlatformFile inputFile)async{
-    // print(Directory(inputFile.path!).parent.path);
-    // print(basenameWithoutExtension(inputFile.path!));
-    String strPath ='${Directory(inputFile.path!).parent.path}\\${basenameWithoutExtension(inputFile.path!)}_output.txt';
-    // print(strPath);
-    File myOutFile = File(strPath);
-
-    File file = File(inputFile.name);
-    List<String> s=file.readAsLinesSync();
-    for(int i=0;i<s.length;i++)
-    {n.add(s[i]);}
-    reset_proc();
-    running=true;
-    RF[2]=2147483644;
-    load_progmem();
-    run_riscvsim(myOutFile);
+  void displayOutput() {
+    setState(() {;});
   }
-
-
-  @override
-  Widget build(BuildContext context){
-    return Scaffold(
-        appBar: AppBar(
-          leading: BackButton(
-            onPressed: (){
-              Navigator.of(context).pop();
-            },
-          ),
-          title: const Text('Single Cycle'),
-          actions: <Widget>[
-            ElevatedButton(
-              onPressed: (){
-                myFilePicker();
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) => AlertDialog(
-                    title: const Text('Information'),
-                    content: const Text('Once file is selected, the output file will be created in the same directory.'),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, 'OK'),
-                        child: const Text('OK'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              child: Text('Open File'),
-            )
-          ],
-        ),
-        body: MySingleCycleBody()
-    );
-  }
-}
-
-class MySingleCycleBody extends StatelessWidget{
-  const MySingleCycleBody({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: RichText(
-        text: const TextSpan(
-          text: 'Let\'s study ',
-          style: TextStyle(fontSize: 32,color: Colors.black54),
-          children: <TextSpan>[
-            TextSpan(
-                text: 'Computer Architecture!',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 64,
-                )
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: (){
+            Navigator.of(context).pop();
+          },
+        ),
+        title: const Text('Single Cycle'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.file_open),
+            tooltip: 'Select .mc file',
+            onPressed: (){
+              myFilePicker();
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('Information'),
+                  content: const Text('If a file is selected, the output file will be created in the same directory.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'OK'),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          )
+        ],
+      ),
+      body: Container(
+        width: 500,
+        padding: const EdgeInsets.all(10),
+        child: Column(
+
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: (){
+                    if(!outputRan && displayStep<outputLines.length) {
+                      displayStep++;
+                      displayTxt += '${outputLines[displayStep]}\n\n';
+                      displayOutput();
+                    }
+                  },
+                  child: const Text('Step'),
+                ),
+                ElevatedButton(
+                  onPressed: (){
+                    if(!outputRan) {
+                      outputRan=true;
+                      displayTxt = outputTxt;
+                      displayOutput();
+                    }
+                  },
+                  child:const Text('Run')
+                ),
+                ElevatedButton(
+                    onPressed: (){
+                      outputRan = false;
+                      displayTxt = '${outputLines[0]}\n\n';
+                      displayStep=0;
+                      displayOutput();
+                    },
+                    child:const Text('Reset')
+                ),
+              ],
+            ),
+            const SizedBox(height: 10,),
+            Expanded(
+              child:Container(
+                width: 500,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: Colors.black,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                ),
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: Text(
+                    displayTxt,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 18.0,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
