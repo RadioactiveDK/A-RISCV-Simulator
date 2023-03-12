@@ -2,7 +2,7 @@ import "dart:io";
 import "dart:async";
 import "dart:convert";
 
-  int aluresult = 0,
+int aluresult = 0,
       immediate = 0,
       operand1 = 0,
       operand2 = 0,
@@ -129,10 +129,10 @@ import "dart:convert";
     MEM[Eaddress] = operand2;
   }
 
-  void fetch() {
+  void fetch(File f) {
     int mcode = MEM[pc] ?? 0;
     if (mcode == 0 || mcode == -285212655) {
-      swi_exit();
+      swi_exit(f);
     }
     else
     {dec2bin(mcode);for(int i=0;i<32;i++){b[i]=t[i];}}
@@ -407,30 +407,28 @@ import "dart:convert";
     }
   }
 
-  void swi_exit() {
-    //write_datamemory();
+  void swi_exit(File f) {
+    write_datamemory(f);
     print(RF);
     running = false;
   }
 
-  void write_datamemory(){
-    
-     myOutfile.writeAsStringSync("address       Data\n",mode:FileMode.append);
+  void write_datamemory(File myOutFile){
+    myOutFile.writeAsStringSync("ADDRESS\t\t\t\tDATA\n\n",mode:FileMode.append);
     for(var i in MEM.keys){
-    String adress=i.toRadixString(16);
-    int val=MEM[i]??0;
-    if(val<0){val=(1<<32)+val;}
-    adress="0x"+adress+"       0x"+val.toRadixString(16)+"\n";
-     myOutfile.writeAsStringSync(adress,mode:FileMode.append);
-  }
- 
+      String adress=i.toRadixString(16);
+      int val=MEM[i]??0;
+      if(val<0){val=(1<<32)+val;}
+      adress="0x"+'0'*(8-adress.length)+adress+"\t\t\t0x"+'0'*(8-val.toRadixString(16).length)+val.toRadixString(16)+"\n";
+      myOutFile.writeAsStringSync(adress,mode:FileMode.append);
+    }
   }
 
-  void run_riscvsim(){
+  void run_riscvsim(File f){
     RF[23]=7;
     RF[24]=4;
     while(running){
-      fetch();
+      fetch(f);
       decode();
       execute();
       memory();
@@ -476,7 +474,6 @@ import "dart:convert";
       MEM[address]=instruct;
     }
   }
-
 
 void main() {
   var path='test.txt';
