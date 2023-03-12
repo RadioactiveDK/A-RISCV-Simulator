@@ -77,9 +77,10 @@ class SingleCycle extends StatefulWidget {
 }
 
 class _SingleCycleState extends State<SingleCycle> {
-  String outputTxt='byeeee',displayTxt='HELOOOOOOOOOOOOOOO';
-
+  String outputTxt='',displayTxt='';
+  List<String>outputLines = [];
   int clock=0,
+      printStep=0,
       aluresult = 0,
       immediate = 0,
       operand1 = 0,
@@ -93,7 +94,8 @@ class _SingleCycleState extends State<SingleCycle> {
       rd = 0,
       mcode = 0;
   int type = 0, funct3 = 0, funct7 = 0, pc = 0;
-  bool Rfwrite = false,
+  bool outputRan = false,
+      Rfwrite = false,
       Memop = false,
       op2select = false,
       isBranch = false,
@@ -212,7 +214,7 @@ class _SingleCycleState extends State<SingleCycle> {
     }
     else
     {dec2bin(mcode);for(int i=0;i<32;i++){b[i]=t[i];}}
-    outputTxt+='FETCHED instruction 0x'+'0'*(8-(MEM[pc]!).toRadixString(16).length)+(MEM[pc]!).toRadixString(16)+' from address 0x${pc.toRadixString(16)}\n';
+    outputTxt+='FETCHED instruction 0x${'0'*(8-(MEM[pc]??0).toRadixString(16).length)}${(MEM[pc]??0).toRadixString(16)} from address 0x${pc.toRadixString(16)}\n';
   }
 
   void decode() {
@@ -504,8 +506,8 @@ class _SingleCycleState extends State<SingleCycle> {
   void run_riscvsim(File f){
     pc=0;
     clock=0;
+    printStep=0;
     while(running){
-      outputTxt+='-----CLOCK CYCLES ELAPSED = $clock-----\n';
       fetch(f);
       decode();
       execute();
@@ -513,7 +515,9 @@ class _SingleCycleState extends State<SingleCycle> {
       write_back();
       reset_proc();
       clock++;
+      outputTxt+='CLOCK CYCLES ELAPSED = $clock\n\n';
     }
+    outputLines = outputTxt.split('\n\n');
   }
 
   void load_progmem(){
@@ -567,6 +571,7 @@ class _SingleCycleState extends State<SingleCycle> {
     {n.add(s[i]);}
     reset_proc();
     running=true;
+    outputRan = false;
     RF[2]=2147483644;
     load_progmem();
     run_riscvsim(outputFile);
@@ -579,8 +584,8 @@ class _SingleCycleState extends State<SingleCycle> {
     );
     if (result==null) return;
     PlatformFile myFile = result.files.single;
-    outputTxt='';
-    displayTxt='';
+    outputTxt='CLOCK CYCLES ELAPSED = 0\n\n';
+    displayTxt='CLOCK CYCLES ELAPSED = 0\n\n';
     singleCycleCode(myFile);
     displayOutput();
   }
@@ -631,15 +636,21 @@ class _SingleCycleState extends State<SingleCycle> {
               children: [
                 ElevatedButton(
                   onPressed: (){
-
-                    displayOutput();
+                    if(!outputRan && printStep<outputLines.length) {
+                      printStep++;
+                      displayTxt += '${outputLines[printStep]}\n\n';
+                      displayOutput();
+                    }
                   },
                   child: const Text('Step'),
                 ),
                 ElevatedButton(
                   onPressed: (){
-                    displayTxt=outputTxt;
-                    displayOutput();
+                    if(!outputRan) {
+                      outputRan=true;
+                      displayTxt = outputTxt;
+                      displayOutput();
+                    }
                   },
                   child:const Text('Run')
                 )
@@ -650,9 +661,10 @@ class _SingleCycleState extends State<SingleCycle> {
                 scrollDirection: Axis.vertical,
                 child: Text(
                   displayTxt,
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.black,
-                    fontSize: 20.0,
+                    fontSize: 18.0,
                   ),
                 ),
               ),
