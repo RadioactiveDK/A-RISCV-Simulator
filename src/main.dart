@@ -763,11 +763,11 @@ class _SingleCycleState extends State<SingleCycle> {
                     color: Colors.black,
                     width: 2,
                   ),
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
+                  borderRadius: const BorderRadius.all(Radius.circular(10)),
                 ),
                 child: SingleChildScrollView(
                   scrollDirection: Axis.vertical,
-                  child: Text(
+                  child: SelectableText(
                     displayTxt,
                     textAlign: TextAlign.left,
                     style: const TextStyle(
