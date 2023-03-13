@@ -1138,10 +1138,9 @@ class ArrowPainter extends CustomPainter {
     ///IsBranch to PC Arrow
     {
       Path path = Path();
-      path.moveTo(size.width * .245, size.height * .15);
-      path.relativeCubicTo(-size.width * .12, 0, -size.width * .12,
-          size.height * .04, -size.width * .12, size.height * .035);
-
+      path.moveTo(size.width * .25, size.height * .15);
+      path.relativeLineTo(-size.width*.125, 0);
+      path.relativeLineTo(0, size.height*.035);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
     }
@@ -1240,12 +1239,12 @@ class ArrowPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(size.width * .24, size.height * .69));
     }
 
-    ///Read data to resultselect
+    ///Read data to result select
     {
       Path path = Path();
       path.moveTo(size.width * .9, size.height * .52);
-      path.relativeCubicTo(0, -size.height * .04, -size.width * .15,
-          -size.height * .04, -size.width * .16, -size.height * .04);
+      path.relativeLineTo(0, -size.height*.04);
+      path.relativeLineTo(-size.width*.17, 0);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
       final TextSpan textSpan = TextSpan(
@@ -1264,9 +1263,9 @@ class ArrowPainter extends CustomPainter {
     ///Branch Target Select to Adder
     {
       Path path = Path();
-      path.moveTo(size.width * .58, size.height * .35);
-      path.relativeCubicTo(size.width * .11, 0, size.width * .11, 0,
-          size.width * .11, -size.height * .14);
+      path.moveTo(size.width * .57, size.height * .335);
+      path.relativeLineTo(size.width*.11, 0);
+      path.relativeLineTo(0, -size.height*.125);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
     }
@@ -1315,8 +1314,8 @@ class ArrowPainter extends CustomPainter {
     {
       Path path = Path();
       path.moveTo(size.width * .61, size.height * .47);
-      path.relativeCubicTo(-size.width * .28, 0, -size.width * .28, 0,
-          -size.width * .28, size.height * .07);
+      path.relativeLineTo(-size.width*.27, 0);
+      path.relativeLineTo(0, size.height*.065);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
     }
@@ -1344,8 +1343,8 @@ class ArrowPainter extends CustomPainter {
     ///OP2 Select to ALU
     {
       Path path = Path();
-      path.moveTo(size.width * .545, size.height * .8);
-      path.relativeLineTo(size.width * .09, size.height * .06);
+      path.moveTo(size.width * .545, size.height * .82);
+      path.relativeLineTo(size.width * .09, 0);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
       final TextSpan textSpan = TextSpan(
@@ -1364,8 +1363,9 @@ class ArrowPainter extends CustomPainter {
     ///RF to ALU
     {
       Path path = Path();
-      path.moveTo(size.width * .37, size.height * .6);
-      path.relativeLineTo(size.width * .27, size.height * .18);
+      path.moveTo(size.width * .37, size.height * .59);
+      path.relativeLineTo(size.width * .28, 0);
+      path.relativeLineTo(0, size.height * .18);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
       final TextSpan textSpan = TextSpan(
@@ -1437,8 +1437,9 @@ class ArrowPainter extends CustomPainter {
     ///RF to OP2 select
     {
       Path path = Path();
-      path.moveTo(size.width * .37, size.height * .63);
-      path.relativeLineTo(size.width * .1, size.height * .1);
+      path.moveTo(size.width * .37, size.height * .64);
+      path.relativeLineTo(size.width * .1, 0);
+      path.relativeLineTo(0, size.height * .1);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
       final TextSpan textSpan = TextSpan(
@@ -1451,7 +1452,7 @@ class ArrowPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       );
       textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .085, size.height * .7));
+      textPainter.paint(canvas, Offset(-size.width * .085, size.height * .64));
     }
 
     ///Sign ext to OP2 select Imm
