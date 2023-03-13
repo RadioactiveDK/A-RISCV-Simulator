@@ -15,7 +15,7 @@ Table of contents
 - includes three `.mc` files for testing
 
 ## How to execute
-1. Install the `.zip` file from bin folder and run `arch.exe` after extracting.
+1. Install the `Release` folder and run `arch.exe` after extracting.
 2. Choose the type of execution.
 3. Select a `.mc` file.
 4. Leave the rest up to the program.
