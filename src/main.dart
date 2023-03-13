@@ -18,6 +18,7 @@ class MyHomeScreen extends StatelessWidget {
   const MyHomeScreen({super.key});
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
         drawer: Drawer(
           child: ListView(
@@ -68,6 +69,7 @@ class HomeBody extends StatelessWidget {
 
 class SingleCycle extends StatefulWidget {
   const SingleCycle({Key? key}) : super(key: key);
+
 
   @override
   State<SingleCycle> createState() => _SingleCycleState();
@@ -850,7 +852,7 @@ class _SingleCycleState extends State<SingleCycle> {
                         ),
                         borderRadius: const BorderRadius.all(Radius.circular(10)),
                       ),
-                      child: SingleChildScrollView(
+                      child:SingleChildScrollView(
                         scrollDirection: Axis.vertical,
                         child: SelectableText(
                           displayTxt,
@@ -860,216 +862,235 @@ class _SingleCycleState extends State<SingleCycle> {
                             fontSize: 18.0,
                           ),
                         ),
-                      ),
                     ),
                   )
+                  )
                 ],
-              ),
+            ),
             const SizedBox(width: 15),
-            SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child:Container(
-                width: 1000,
-                height: 800,
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                    color: Colors.cyan[50],
-                    borderRadius: const BorderRadius.all(Radius.circular(10.0))
-                ),
-                child: Stack(
-                  children: <Widget>[
-                    Row(
+            const ExecutionDiagram()
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ExecutionDiagram extends StatefulWidget {
+  const ExecutionDiagram({Key? key}) : super(key: key);
+
+  @override
+  State<ExecutionDiagram> createState() => _ExecutionDiagramState();
+}
+
+class _ExecutionDiagramState extends State<ExecutionDiagram> {
+
+  final ScrollController _mycontroller = new ScrollController();
+
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      controller: _mycontroller,
+      child:Container(
+        width: 1000,
+        height: 800,
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+            color: Colors.cyan[50],
+            borderRadius: const BorderRadius.all(Radius.circular(10.0))
+        ),
+        child: Stack(
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(
-                              height: 50,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text('PC',
-                                  style: TextStyle(fontSize: 15))),
-                          Container(),
-                          Container(
-                              height: 100,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text('Instruction Memory',
-                                  style: TextStyle(fontSize: 15))),
-                        ],
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(
-                              height: 70,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration:const BoxDecoration(
-                                  color: Colors.greenAccent,
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))
-                              ),
-                              child: const Text('IsBranch\n Mux',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 15))),
-                          Container(
-                              height: 60,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text('Adder',
-                                  style: TextStyle(fontSize: 15))),
-                          Container(
-                              height: 100,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text('Register File',
-                                  style: TextStyle(fontSize: 15))),
-                          Container(
-                              height: 50,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text('Sign Ext',
-                                  style: TextStyle(fontSize: 15))),
-                        ],
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(),
-                          Container(
-                              height: 70,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: const BoxDecoration(
-                                  color: Colors.greenAccent,
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))
-                              ),
-                              child: const Text('BranchTargetSelect\nMux',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 15))),
-                          Container(),
-                          Container(
-                              height: 70,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: const BoxDecoration(
-                                  color: Colors.greenAccent,
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))
-                              ),
-                              child: const Text('Op2 Select\nMux',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 15))),
-                        ],
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(
-                              height: 60,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text('Adder',
-                                  style: TextStyle(fontSize: 15))),
-                          Container(),
-                          Container(
-                              height: 80,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration:const BoxDecoration(
-                                  color: Colors.greenAccent,
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))
-                              ),
-                              child: const Text('Result Select\nMux',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 15))),
-                          Container(),
-                          Container(
-                              height: 80,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text('ALU',
-                                  style: TextStyle(fontSize: 15)))
-                        ],
-                      ),
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Container(),
-                          Container(
-                              height: 150,
-                              alignment: Alignment.center,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  border:
-                                  Border.all(width: 5, color: Colors.blue),
-                                  borderRadius:
-                                  BorderRadius.all(Radius.circular(10.0))),
-                              child: const Text(
-                                  'Mem Addr    Read Data\n\n       DATA MEMORY\n\nData Write',
-                                  style: TextStyle(fontSize: 15))),
-                        ],
-                      ),
+                      Container(
+                          height: 50,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text('PC',
+                              style: TextStyle(fontSize: 15))),
+                      Container(),
+                      Container(
+                          height: 100,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text('Instruction Memory',
+                              style: TextStyle(fontSize: 15))),
                     ],
-                    ),
-                    ClipRect(
-                      child: CustomPaint(
-                        size: const Size(1000,800),
-                        painter: ArrowPainter(),
-                      ),
-                    ),
-                  ]
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(
+                          height: 70,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration:const BoxDecoration(
+                              color: Colors.greenAccent,
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))
+                          ),
+                          child: const Text('IsBranch\n Mux',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 15))),
+                      Container(
+                          height: 60,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text('Adder',
+                              style: TextStyle(fontSize: 15))),
+                      Container(
+                          height: 100,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text('Register File',
+                              style: TextStyle(fontSize: 15))),
+                      Container(
+                          height: 50,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text('Sign Ext',
+                              style: TextStyle(fontSize: 15))),
+                    ],
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(),
+                      Container(
+                          height: 70,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                              color: Colors.greenAccent,
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))
+                          ),
+                          child: const Text('BranchTargetSelect\nMux',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 15))),
+                      Container(),
+                      Container(
+                          height: 70,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                              color: Colors.greenAccent,
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))
+                          ),
+                          child: const Text('Op2 Select\nMux',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 15))),
+                    ],
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(
+                          height: 60,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text('Adder',
+                              style: TextStyle(fontSize: 15))),
+                      Container(),
+                      Container(
+                          height: 80,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration:const BoxDecoration(
+                              color: Colors.greenAccent,
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))
+                          ),
+                          child: const Text('Result Select\nMux',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 15))),
+                      Container(),
+                      Container(
+                          height: 80,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text('ALU',
+                              style: TextStyle(fontSize: 15)))
+                    ],
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Container(),
+                      Container(
+                          height: 150,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: Colors.white,
+                              border:
+                              Border.all(width: 5, color: Colors.blue),
+                              borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                          child: const Text(
+                              'Mem Addr    Read Data\n\n       DATA MEMORY\n\nData Write',
+                              style: TextStyle(fontSize: 15))),
+                    ],
+                  ),
+                ],
+              ),
+              ClipRect(
+                child: CustomPaint(
+                  size: const Size(1000,800),
+                  painter: ArrowPainter(),
                 ),
               ),
-            )
-          ],
+            ]
         ),
       ),
     );
