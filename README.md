@@ -4,8 +4,8 @@ Table of contents
 - How to Execute
   
 ## Directory Structure
-1. **bin**
-- includes `.exe` file
+1. **Release**
+- includes  the assets and `.exe` file to run the program
 2. **design**
 - decribes the design specifications of this simulator
 3. **src**
