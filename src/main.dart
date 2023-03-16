@@ -18,28 +18,52 @@ class MyHomeScreen extends StatelessWidget {
   const MyHomeScreen({super.key});
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
         drawer: Drawer(
-          child: ListView(
+          child:ListView(
             children: [
-              ListTile(
-                title: const Text('Single-Cycle'),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const SingleCycle(),
-                    ),
-                  );
-                },
+              const DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent,
+                  borderRadius: BorderRadius.only(
+                    bottomRight: Radius.circular(10),
+                  )
+                ),
+                child: Text(
+                    'Execution\nType',
+                    textAlign: TextAlign.left,
+                    style: TextStyle(fontSize: 30,fontWeight: FontWeight.bold,color: Colors.white),
+                  ),
               ),
+              ListTile(
+                  title: const Text('Single Cycle'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const SingleCycle(),
+                      ),
+                    );
+                  },
+                ),
+              ListTile(
+                  title: const Text('Pipelined'),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const Pipelined(),
+                      ),
+                    );
+                  },
+                ),
             ],
           ),
+
         ),
         appBar: AppBar(
-          title: const Text('Computer Architecture'),
+          title: const Text('RISCV-32I Simulator'),
         ),
-        body: const HomeBody());
+        body: const HomeBody()
+    );
   }
 }
 
@@ -726,7 +750,7 @@ class _SingleCycleState extends State<SingleCycle> {
     // print(Directory(inputFile.path!).parent.path);
     // print(basenameWithoutExtension(inputFile.path!));
     String strPath =
-        '${Directory(inputFile.path!).parent.path}\\${basenameWithoutExtension(inputFile.path!)}_output.txt';
+        '${Directory(inputFile.path!).parent.path}\\${basenameWithoutExtension(inputFile.path!)}_SingleCycle.txt';
     // print(strPath);
     File outputFile = File(strPath);
 
@@ -743,6 +767,14 @@ class _SingleCycleState extends State<SingleCycle> {
     run_riscvsim(outputFile);
   }
 
+
+
+  void displayOutput() {
+    setState(() {
+      ;
+    });
+  }
+
   void myFilePicker() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -756,12 +788,6 @@ class _SingleCycleState extends State<SingleCycle> {
     displayOutput();
   }
 
-  void displayOutput() {
-    setState(() {
-      ;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -771,7 +797,7 @@ class _SingleCycleState extends State<SingleCycle> {
             Navigator.of(context).pop();
           },
         ),
-        title: const Text('Single Cycle'),
+        title: const Text('Single Cycle Execution'),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.file_open),
@@ -1602,4 +1628,125 @@ class ArrowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ArrowPainter oldDelegate) => false;
+}
+
+class Pipelined extends StatefulWidget {
+  const Pipelined({Key? key}) : super(key: key);
+
+  @override
+  State<Pipelined> createState() => _PipelinedState();
+}
+
+class _PipelinedState extends State<Pipelined> {
+  void myFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mc'],
+    );
+    if (result == null) return;
+    PlatformFile myFile = result.files.single;
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: const Text('Pipelined Execution'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.file_open),
+            tooltip: 'Select .mc file',
+            onPressed: () {
+              myFilePicker();
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('Information'),
+                  content: const Text(
+                      'If a file is selected, the output file will be created in the same directory.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'OK'),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            Column(
+              children: [
+                Container(
+                    width: 500,
+                    child:Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            int a;
+                          },
+                          child: const Text('Step'),
+                        ),
+                        ElevatedButton(
+                            onPressed: () {
+                                int a;
+                            },
+                            child: const Text('Run')),
+                        ElevatedButton(
+                            onPressed: () {
+                              int a;
+                            },
+                            child: const Text('Reset')),
+                      ],
+                    )
+                ),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SelectableText(
+                          'displayTxt',
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                      ),
+                    )
+                )
+              ],
+            ),
+            const SizedBox(width: 15),
+            const ExecutionDiagram()
+          ],
+        ),
+      ),
+    );
+  }
 }
