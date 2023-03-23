@@ -22,7 +22,7 @@ import "dart:convert";
   Map<int, int> MEM = Map<int, int>();
 
   void dec2bin(int value) {
-    if (value < 0) value = (1 << 32) + value;
+     if (value < 0) value = (1 << 32) + value;
 
     for (int i = 0; i < 32; i++) {
       t[i] = 0;
@@ -31,18 +31,21 @@ import "dart:convert";
     int i = 0;
     while (value > 0 && i <= 31) {
       t[i] = value % 2;
-      double next=value/2;
-      value=next.toInt();
+      double next = value / 2;
+      value = next.toInt();
       i++;
     }
   }
 
   int comp2() {
+
     int c = t[31];
     if (c == 1) {
       for (int i = 0; i <= 31; i++) {
-        if(t[i]==1)t[i]=0;
-        else t[i]=1;
+        if (t[i] == 1)
+          t[i] = 0;
+        else
+          t[i] = 1;
       }
       int i = 0;
       while (i <= 31 && t[i] == 1) {
@@ -143,7 +146,6 @@ import "dart:convert";
     }
     dec2bin(if_de[1]);
     for(int i=0;i<32;i++){b[i]=t[i];}
-
     ///i type
     if (if_de[1]&0x3F == 19 || if_de[1]&0x3F == 3 || if_de[1]&0x3F == 103) {
       for (int i = 20; i <= 31; i++) {
@@ -197,7 +199,7 @@ import "dart:convert";
       for (int i = 7; i <= 11; i++) {
         im[i - 7] = b[i];
       }
-      for (int i = 25; i <= 30; i++) {
+      for (int i = 25; i <= 31; i++) {
         im[i - 20] = b[i];
       }
       for (int i = 12; i <= 31; i++) {
@@ -224,7 +226,8 @@ import "dart:convert";
     if(t2[1]&0x3F==19 || t2[1]&0x3F==3 || t2[1]&0x3F==35 || t2[1]&0x3F==103)t2[6]=1;
 
    //MEmop
-    if(t2[1]&0x3F==35)t2[10]=1;//for store 
+    if(t2[1]&0x3F==35)t2[10]=1;//for store
+     
 
    //ALUOP
     if (t2[1]&0x3F == 99 || (t2[1]&0x3F == 51 && t2[1]>>12&0x3 == 0 && t2[1]>>25&0x3F == 32)) {
@@ -391,17 +394,18 @@ import "dart:convert";
     }
   }
   void write_back(File f) {
+       
         if( ma_wb[3]==1  &&   ((ma_wb[1]>>7)&0x1F)!=0 ){
           RF[(ma_wb[1]>>7)&0x1F]=ma_wb[2];
         }
-        if(ma_wb[1]==1){swi_exit(f);}
+        if(ma_wb[1]==1 ){swi_exit(f);}
   }
   void transfer()
   {
 
      if(hazardDetect(de_ex[1])==false && hazardDetect(ex_ma[1])==false && hazardDetect(ma_wb[1])==false){
-      if(isBranchtaken==true)pc=btarget;
-      else pc=pc+4;
+      if(isBranchtaken==true){pc=btarget;}
+      else {pc=pc+4;}
       //if to de//
       if_de[0]=t1[0];if_de[1]=t1[1];
       //de to ex//
@@ -410,10 +414,13 @@ import "dart:convert";
      else{
       de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}
      }
-     if(isBranchtaken==true){isBranchtaken=false;if_de[0]=0;if_de[1]=19;de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}}
+     if(isBranchtaken==true){print("yes ${pc}");isBranchtaken=false;if_de[0]=0;if_de[1]=19;de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}}
      //ma to wb//
-     for(int i=0;i<9;i++){ex_ma[i]=t3[i];}
-     for(int i=0;i<5;i++){ma_wb[i]=t4[i];}
+     for(int i=0;i<9;i++){ex_ma[i]=t3[i];t3[i]=0;}
+     for(int i=0;i<5;i++){ma_wb[i]=t4[i];t4[i]=0;}
+     //
+     for(int i=0;i<13;i++){t2[i]=0;}
+     t1[0]=0;t1[1]=0;
 
   }
   void swi_exit(File f) {
@@ -424,10 +431,11 @@ import "dart:convert";
     int opcode=instruction&0x3F;
     bool hasrs1=true,hasrs2=false;
     if(opcode==35 || opcode==99 || opcode==0 || instruction==19){return false;}
-    if(if_de[1]&0x3F==111 || if_de[1]&0x3F==55 || if_de[1]&0x3F==23){return false;}
+    if(if_de[1]&0x3F==111 || if_de[1]&0x3F==55 || if_de[1]&0x3F==23 || if_de[1]==19){return false;}
+    int src1=(if_de[1]>>15)&0x1F,src2=(if_de[1]>>20)&0x1F,dest=(instruction>>7)&0x1F;
     if(if_de[1]&0x3F==51 || if_de[1]&0x3F==35 || if_de[1]&0x3F==99){hasrs2=true;}
-    if(hasrs1==true && ((if_de[1]>>15)&0x1F == (instruction>>15)&0x1F)){return true;}
-    if(hasrs2==true && ((if_de[1]>>20)&0x1F == (instruction>>20)&0x1F)){return true;}
+    if(hasrs1==true && (src1!=0) && (src1 == dest)){return true;}
+    else if(hasrs2==true &&(src2!=0) && (src2 == dest)){return true;}
     return false;
   }
   void run_riscvsim(File f){
@@ -437,11 +445,15 @@ import "dart:convert";
       execute();
       memory();
       write_back(f);
-      transfer();
       //print("**************************");
-      //print("${t1} ${t2} ${t3} ${t4}" );
-      print(pc);
+      // print(pc);
+      // print(if_de);
+      // print(de_ex);
+      // print(ex_ma);
+      // print(ma_wb);
+      // print(RF);
       count++;
+      transfer();
     }
   }
 
