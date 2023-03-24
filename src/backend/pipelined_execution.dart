@@ -147,7 +147,7 @@ import "dart:convert";
     dec2bin(if_de[1]);
     for(int i=0;i<32;i++){b[i]=t[i];}
     ///i type
-    if (if_de[1]&0x3F == 19 || if_de[1]&0x3F == 3 || if_de[1]&0x3F == 103) {
+    if (if_de[1]&0x7F == 19 || if_de[1]&0x7F == 3 || if_de[1]&0x7F == 103) {
       for (int i = 20; i <= 31; i++) {
         im[i - 20] = b[i];
       }
@@ -157,7 +157,7 @@ import "dart:convert";
     }
 
     ///j type
-    else if (if_de[1]&0x3F == 111) {
+    else if (if_de[1]&0x7F == 111) {
       for (int i = 12; i <= 19; i++) {
         im[i] = b[i];
       }
@@ -172,14 +172,14 @@ import "dart:convert";
     }
 
     //u type
-    else if (if_de[1]&0x3F == 55 || if_de[1]&0x3F == 23) {
+    else if (if_de[1]&0x7F == 55 || if_de[1]&0x7F == 23) {
       for (int i = 12; i <= 31; i++) {
         im[i] = b[i];
       }
     }
 
     ///b type
-    else if (if_de[1]&0x3F == 99) {
+    else if (if_de[1]&0x7F == 99) {
       im[11] = b[7];
       im[12] = b[31];
       for (int i = 8; i <= 11; i++) {
@@ -194,7 +194,7 @@ import "dart:convert";
     }
     
     //s type
-    else if(if_de[1]&0x3F==35)
+    else if(if_de[1]&0x7F==35)
     {
       for (int i = 7; i <= 11; i++) {
         im[i - 7] = b[i];
@@ -214,38 +214,38 @@ import "dart:convert";
     t2[4] = comp2();
 
     //Rfwrite
-    if(t2[1]&0x3F==51 || t2[1]&0x3F==19 || t2[1]&0x3F==3 || t2[1]&0x3F==111 || t2[1]&0x3F==103 || t2[1]&0x3F==55 || t2[1]&0x3F==23){t2[11]=1;}
+    if(t2[1]&0x7F==51 || t2[1]&0x7F==19 || t2[1]&0x7F==3 || t2[1]&0x7F==111 || t2[1]&0x7F==103 || t2[1]&0x7F==55 || t2[1]&0x7F==23){t2[11]=1;}
 
     //resultselect
-    if (t2[1]&0x3F == 3) t2[9] = 1; //load mode
-    else if (t2[1]&0x3F == 111 || t2[1]&0x3F == 103) t2[9] = 2; //jal|jalr pc+4
-    else if(t2[1]&0x3F==23)t2[9]=3;//auipc
-    else if(t2[1]&0x3F==55)t2[9]=4;//lui
+    if (t2[1]&0x7F == 3) t2[9] = 1; //load mode
+    else if (t2[1]&0x7F == 111 || t2[1]&0x7F == 103) t2[9] = 2; //jal|jalr pc+4
+    else if(t2[1]&0x7F==23)t2[9]=3;//auipc
+    else if(t2[1]&0x7F==55)t2[9]=4;//lui
 
    //op2select
-    if(t2[1]&0x3F==19 || t2[1]&0x3F==3 || t2[1]&0x3F==35 || t2[1]&0x3F==103)t2[6]=1;
+    if(t2[1]&0x7F==19 || t2[1]&0x7F==3 || t2[1]&0x7F==35 || t2[1]&0x7F==103)t2[6]=1;
 
    //MEmop
-    if(t2[1]&0x3F==35)t2[10]=1;//for store
+    if(t2[1]&0x7F==35)t2[10]=1;//for store
      
 
    //ALUOP
-    if (t2[1]&0x3F == 99 || (t2[1]&0x3F == 51 && t2[1]>>12&0x3 == 0 && t2[1]>>25&0x3F == 32)) {
+    if (t2[1]&0x7F == 99 || (t2[1]&0x7F == 51 && t2[1]>>12&0x7 == 0 && t2[1]>>25&0x7F == 32)) {
       t2[7] = 1;
     } //sub
-    else if (t2[1]>>12&0x3 == 7 && (t2[1]&0x3F == 51 || t2[1]&0x3F == 19))
+    else if (t2[1]>>12&0x7 == 7 && (t2[1]&0x7F == 51 || t2[1]&0x7F == 19))
       t2[7] = 2; //and
-    else if (t2[1]>>12&0x3 == 6 && (t2[1]&0x3F == 51 || t2[1]&0x3F == 19))
+    else if (t2[1]>>12&0x7 == 6 && (t2[1]&0x7F == 51 || t2[1]&0x7F == 19))
       t2[7] = 3; //or
-    else if (t2[1]&0x3F == 51 && t2[1]>>12&0x3 == 4)
+    else if (t2[1]&0x7F == 51 && t2[1]>>12&0x7 == 4)
       t2[7] = 4; //xor
-    if (t2[1]&0x3F == 51) {
-      if (t2[1]>>12&0x3 == 1) t2[7] = 5; //sll
-      else if (t2[1]>>12&0x3 == 5 && t2[1]>>25&0x3F == 32)
+    if (t2[1]&0x7F == 51) {
+      if (t2[1]>>12&0x7 == 1) t2[7] = 5; //sll
+      else if (t2[1]>>12&0x7 == 5 && t2[1]>>25&0x7F == 32)
         t2[7] = 7; //sra
-      else if(t2[1]>>12&0x3==5 && t2[1]>>25&0x3F==0)
+      else if(t2[1]>>12&0x7==5 && t2[1]>>25&0x7F==0)
         t2[7] = 6; //srl
-      else if(t2[1]>>12&0x3==2)t2[7]=8;
+      else if(t2[1]>>12&0x7==2)t2[7]=8;
     }   
   }
   void execute() {
@@ -338,17 +338,17 @@ import "dart:convert";
     }
     //branch
     btarget=pc+4;
-    if(de_ex[1]&0x3F==99 || de_ex[1]&0x3F==111)btarget = de_ex[0] + de_ex[4];
-    else if(de_ex[1]&0x3F==103)btarget=temp+op1;
-    if (de_ex[1]&0x3F == 111 || de_ex[1]&0x3F==103) {t3[7] = 1;}
-    if(de_ex[1]&0x3F==99){
-      if ((de_ex[1]>>12)&0x3 == 0 && (t3[2]==0)) t3[7] = 1;
-      else if ((de_ex[1]>>12)&0x3 == 1 && (t3[2]!=0)) t3[7] = 1;
-      else if ((de_ex[1]>>12)&0x3 == 4 && (t3[2]<0)) t3[7] = 1;
-      else if ((de_ex[1]>>12)&0x3 == 5 && (t3[2] >= 0)) t3[7] = 1;
+    if(de_ex[1]&0x7F==99 || de_ex[1]&0x7F==111)btarget = de_ex[0] + de_ex[4];
+    else if(de_ex[1]&0x7F==103)btarget=temp+op1;
+    if (de_ex[1]&0x7F == 111 || de_ex[1]&0x7F==103) {t3[7] = 1;}
+    if(de_ex[1]&0x7F==99){
+      if ((de_ex[1]>>12)&0x7 == 0 && (t3[2]==0)) t3[7] = 1;
+      else if ((de_ex[1]>>12)&0x7 == 1 && (t3[2]!=0)) t3[7] = 1;
+      else if ((de_ex[1]>>12)&0x7 == 4 && (t3[2]<0)) t3[7] = 1;
+      else if ((de_ex[1]>>12)&0x7 == 5 && (t3[2] >= 0)) t3[7] = 1;
     }
     ////////branch target remaining////////////
-    if(t3[7]==1 && (de_ex[1]&0x3F==99 || de_ex[1]&0x3F == 111 || de_ex[1]&0x3F==103)){isBranchtaken=true;}
+    if(t3[7]==1 && (de_ex[1]&0x7F==99 || de_ex[1]&0x7F == 111 || de_ex[1]&0x7F==103)){isBranchtaken=true;}
     
   }
   void memory() {
@@ -414,7 +414,7 @@ import "dart:convert";
      else{
       de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}
      }
-     if(isBranchtaken==true){print("yes ${pc}");isBranchtaken=false;if_de[0]=0;if_de[1]=19;de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}}
+     if(isBranchtaken==true){isBranchtaken=false;pc=btarget;if_de[0]=0;if_de[1]=19;de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}}
      //ma to wb//
      for(int i=0;i<9;i++){ex_ma[i]=t3[i];t3[i]=0;}
      for(int i=0;i<5;i++){ma_wb[i]=t4[i];t4[i]=0;}
@@ -428,12 +428,12 @@ import "dart:convert";
     exit(0);
   }
   bool hazardDetect(int instruction){
-    int opcode=instruction&0x3F;
+    int opcode=instruction&0x7F;
     bool hasrs1=true,hasrs2=false;
     if(opcode==35 || opcode==99 || opcode==0 || instruction==19){return false;}
-    if(if_de[1]&0x3F==111 || if_de[1]&0x3F==55 || if_de[1]&0x3F==23 || if_de[1]==19){return false;}
+    if(if_de[1]&0x7F==111 || if_de[1]&0x7F==55 || if_de[1]&0x7F==23 || if_de[1]==19){return false;}
     int src1=(if_de[1]>>15)&0x1F,src2=(if_de[1]>>20)&0x1F,dest=(instruction>>7)&0x1F;
-    if(if_de[1]&0x3F==51 || if_de[1]&0x3F==35 || if_de[1]&0x3F==99){hasrs2=true;}
+    if(if_de[1]&0x7F==51 || if_de[1]&0x7F==35 || if_de[1]&0x7F==99){hasrs2=true;}
     if(hasrs1==true && (src1!=0) && (src1 == dest)){return true;}
     else if(hasrs2==true &&(src2!=0) && (src2 == dest)){return true;}
     return false;
