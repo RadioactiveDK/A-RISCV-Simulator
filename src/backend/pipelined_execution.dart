@@ -342,10 +342,10 @@ import "dart:convert";
     else if(de_ex[1]&0x7F==103)btarget=temp+op1;
     if (de_ex[1]&0x7F == 111 || de_ex[1]&0x7F==103) {t3[7] = 1;}
     if(de_ex[1]&0x7F==99){
-      if ((de_ex[1]>>12)&0x7 == 0 && (t3[2]==0)) t3[7] = 1;
-      else if ((de_ex[1]>>12)&0x7 == 1 && (t3[2]!=0)) t3[7] = 1;
-      else if ((de_ex[1]>>12)&0x7 == 4 && (t3[2]<0)) t3[7] = 1;
-      else if ((de_ex[1]>>12)&0x7 == 5 && (t3[2] >= 0)) t3[7] = 1;
+      if ((de_ex[1]>>12)&0x7 == 0 && (op1==temp)) t3[7] = 1;
+      else if ((de_ex[1]>>12)&0x7 == 1 && (op1!=temp)) t3[7] = 1;
+      else if ((de_ex[1]>>12)&0x7 == 4 && (op1<temp)) t3[7] = 1;
+      else if ((de_ex[1]>>12)&0x7 == 5 && (op1>=temp)) t3[7] = 1;
     }
     ////////branch target remaining////////////
     if(t3[7]==1 && (de_ex[1]&0x7F==99 || de_ex[1]&0x7F == 111 || de_ex[1]&0x7F==103)){isBranchtaken=true;}
