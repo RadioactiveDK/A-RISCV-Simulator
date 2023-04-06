@@ -22,8 +22,23 @@ class MyHomeScreen extends StatelessWidget {
         drawer: Drawer(
           child: ListView(
             children: [
+              const DrawerHeader(
+                decoration: BoxDecoration(
+                    color: Colors.blueAccent,
+                    borderRadius: BorderRadius.only(
+                      bottomRight: Radius.circular(10),
+                    )),
+                child: Text(
+                  'Execution\nType',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+              ),
               ListTile(
-                title: const Text('Single-Cycle'),
+                title: const Text('Single Cycle'),
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -32,11 +47,21 @@ class MyHomeScreen extends StatelessWidget {
                   );
                 },
               ),
+              ListTile(
+                title: const Text('Pipelined'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const Pipelined(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
         appBar: AppBar(
-          title: const Text('Computer Architecture'),
+          title: const Text('RISCV-32I Simulator'),
         ),
         body: const HomeBody());
   }
@@ -74,8 +99,10 @@ class SingleCycle extends StatefulWidget {
 }
 
 class _SingleCycleState extends State<SingleCycle> {
-  String outputTxt = '', displayTxt = '';
+  String outputTxt = '', displayTxt = '', displayReg = '';
+  PlatformFile? myFile;
   List<String> outputLines = [];
+  List<String> outputReg = [];
   int clock = 0,
       displayStep = 0,
       aluresult = 0,
@@ -98,10 +125,10 @@ class _SingleCycleState extends State<SingleCycle> {
       isBranch = false,
       running = true;
   List n = [];
-  final RF = List<int>.filled(32, 0);
-  final b = List<int>.filled(32, 0);
-  final im = List<int>.filled(32, 0);
-  final t = List<int>.filled(32, 0);
+  var RF = List<int>.filled(32, 0);
+  var b = List<int>.filled(32, 0);
+  var im = List<int>.filled(32, 0);
+  var t = List<int>.filled(32, 0);
   Map<int, int> MEM = Map<int, int>();
 
   void dec2bin(int value) {
@@ -221,7 +248,7 @@ class _SingleCycleState extends State<SingleCycle> {
       instr += (1 << 32);
     }
     outputTxt +=
-    'FETCH: Read instruction 0x${'0' * (8 - instr.toRadixString(16).length)}${instr.toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
+        'FETCH: Read instruction 0x${'0' * (8 - instr.toRadixString(16).length)}${instr.toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
   }
 
   void decode() {
@@ -374,7 +401,7 @@ class _SingleCycleState extends State<SingleCycle> {
           outputTxt += "SRA, ";
       }
       outputTxt +=
-      "rs1 is x${rs1}, rs2 is x${rs2} and destination register is x${rd}.\n";
+          "rs1 is x${rs1}, rs2 is x${rs2} and destination register is x${rd}.\n";
     } else if (type == 19) {
       if (funct3 == 0) {
         outputTxt += "ADDI, ";
@@ -384,7 +411,7 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "ANDI, ";
       }
       outputTxt +=
-      "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+          "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
     } else if (type == 3) {
       if (funct3 == 0) {
         outputTxt += "LB, ";
@@ -394,10 +421,10 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "LW, ";
       }
       outputTxt +=
-      "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+          "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
     } else if (type == 103) {
       outputTxt +=
-      "JALR, rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+          "JALR, rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
     } else if (type == 35) {
       if (funct3 == 0) {
         outputTxt += "SB, ";
@@ -407,7 +434,7 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "SW, ";
       }
       outputTxt +=
-      "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+          "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
     } else if (type == 99) {
       if (funct3 == 0) {
         outputTxt += "BEQ, ";
@@ -419,7 +446,7 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "BGE, ";
       }
       outputTxt +=
-      "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+          "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
     } else if (type == 111) {
       outputTxt += "JAL, immediate is ${immediate} and rd is x${rd}.\n";
     } else if (type == 55) {
@@ -493,7 +520,7 @@ class _SingleCycleState extends State<SingleCycle> {
           }
         }
         break;
-    //list use for srl
+      //list use for srl
       case 6:
         {
           outputTxt += "LOGICAL SHIFT right ${operand1} ${temp} times.\n";
@@ -597,6 +624,18 @@ class _SingleCycleState extends State<SingleCycle> {
       else
         RF[0] = 0;
     }
+    var str = "\n\n";
+    if (displayReg == '') {
+      str = '';
+    }
+    for (int i = 0; i < 32; i++) {
+      if (i != 0) {
+        str += "-";
+      }
+      str += RF[i].toString();
+    }
+    displayReg += str;
+
     if (isBranch == true) {
       pc = branchtarget;
     } else
@@ -656,7 +695,7 @@ class _SingleCycleState extends State<SingleCycle> {
     }
   }
 
-  void run_riscvsim(File f) {
+  void runRiscvSim(File f) {
     pc = 0;
     clock = 0;
     displayStep = 0;
@@ -671,6 +710,8 @@ class _SingleCycleState extends State<SingleCycle> {
       outputTxt += 'CLOCK CYCLES ELAPSED = $clock\n\n';
     }
     outputLines = outputTxt.split('\n\n');
+    outputReg = displayReg.split('\n\n');
+    print(outputReg);
   }
 
   void load_progmem() {
@@ -724,7 +765,7 @@ class _SingleCycleState extends State<SingleCycle> {
     // print(Directory(inputFile.path!).parent.path);
     // print(basenameWithoutExtension(inputFile.path!));
     String strPath =
-        '${Directory(inputFile.path!).parent.path}\\${basenameWithoutExtension(inputFile.path!)}_output.txt';
+        '${Directory(inputFile.path!).parent.path}\\${basenameWithoutExtension(inputFile.path!)}_SingleCycle.txt';
     // print(strPath);
     File outputFile = File(strPath);
 
@@ -738,20 +779,7 @@ class _SingleCycleState extends State<SingleCycle> {
     outputRan = false;
     RF[2] = 2147483644;
     load_progmem();
-    run_riscvsim(outputFile);
-  }
-
-  void myFilePicker() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['mc'],
-    );
-    if (result == null) return;
-    PlatformFile myFile = result.files.single;
-    outputTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
-    displayTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
-    singleCycleCode(myFile);
-    displayOutput();
+    runRiscvSim(outputFile);
   }
 
   void displayOutput() {
@@ -760,8 +788,81 @@ class _SingleCycleState extends State<SingleCycle> {
     });
   }
 
+  void myFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mc'],
+    );
+    if (result == null) return;
+    myFile = result.files.single;
+    outputTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
+    displayTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
+
+    singleCycleCode(myFile!);
+    displayOutput();
+  }
+
+  Widget displayRF(List<String> rf) {
+    var RFlist = <Widget>[];
+    for (int i = 0; i < 33; i+=11) {
+      RFlist.add(Column(
+        //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+
+        children: [
+          Container(
+            height: 25,
+            child: Text("x${i}:\t\t${rf[i]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 1}:\t\t${rf[i + 1]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 2}:\t\t${rf[i + 2]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 3}:\t\t${rf[i + 3]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 4}:\t\t${rf[i + 4]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 5}:\t\t${rf[i + 5]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 6}:\t\t${rf[i + 6]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 7}:\t\t${rf[i + 7]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 8}:\t\t${rf[i + 8]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 9}:\t\t${rf[i + 9]}"),
+          ),
+          if(i!=22)
+          Container(
+            height: 25,
+            child: Text("x${i + 10}:\t\t${rf[i + 10]}"),
+          ),
+        ],
+      ));
+    }
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,crossAxisAlignment: CrossAxisAlignment.start,children: RFlist);
+  }
+
   @override
   Widget build(BuildContext context) {
+    //print(displayReg);
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(
@@ -769,7 +870,7 @@ class _SingleCycleState extends State<SingleCycle> {
             Navigator.of(context).pop();
           },
         ),
-        title: const Text('Single Cycle'),
+        title: const Text('Single Cycle Execution'),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.file_open),
@@ -794,280 +895,316 @@ class _SingleCycleState extends State<SingleCycle> {
           )
         ],
       ),
-      body: Container(
-        width: MediaQuery.of(context).size.width,
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.all(10),
         child: Row(
           children: [
             Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        if (!outputRan && displayStep < outputLines.length) {
-                          displayStep++;
-                          displayTxt += '${outputLines[displayStep]}\n\n';
-                          displayOutput();
-                        }
-                      },
-                      child: const Text('Step'),
-                    ),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                        onPressed: () {
-                          if (!outputRan) {
-                            outputRan = true;
-                            displayTxt = outputTxt;
-                            displayOutput();
-                          }
-                        },
-                        child: const Text('Run')),
-                    const SizedBox(width: 10),
-                    ElevatedButton(
-                        onPressed: () {
-                          outputRan = false;
-                          displayTxt = '${outputLines[0]}\n\n';
-                          displayStep = 0;
-                          displayOutput();
-                        },
-                        child: const Text('Reset')),
-                  ],
-                ),
+                Container(
+                    width: 500,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            if (!outputRan &&
+                                displayStep < outputLines.length) {
+                              displayStep++;
+                              displayTxt += '${outputLines[displayStep]}\n\n';
+                              displayOutput();
+                            }
+                          },
+                          child: const Text('Step'),
+                        ),
+                        ElevatedButton(
+                            onPressed: () {
+                              if (!outputRan) {
+                                outputRan = true;
+                                displayTxt = outputTxt;
+                                if (myFile != null) {
+                                  displayStep = outputReg.length - 1;
+                                }
+                                displayOutput();
+                              }
+                            },
+                            child: const Text('Run')),
+                        ElevatedButton(
+                            onPressed: () {
+                              outputRan = false;
+                              displayTxt = '${outputLines[0]}\n\n';
+                              displayStep = 0;
+                              displayOutput();
+                            },
+                            child: const Text('Reset')),
+                      ],
+                    )),
                 const SizedBox(
                   height: 10,
                 ),
                 Expanded(
-                  child: Container(
-                    width: 500,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
+                    child: Container(
+                  width: 500,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 1,
                     ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.vertical,
-                      child: Text(
-                        displayTxt,
-                        textAlign: TextAlign.left,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 18.0,
-                        ),
+                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: SelectableText(
+                      displayTxt,
+                      textAlign: TextAlign.left,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 18.0,
                       ),
                     ),
                   ),
-                )
+                )),
+                const SizedBox(height: 5),
+                Expanded(
+                    child: Container(
+                  width: 500,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 1,
+                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Register File",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 20),
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        if (myFile != null)
+                          displayRF(outputReg[displayStep].split('-')),
+                      ],
+                    ),
+                  ),
+                ))
               ],
             ),
-            const SizedBox(width: 10),
-            Container(
-              width: MediaQuery.of(context).size.width - 550,
-              padding: const EdgeInsets.all(5),
-              decoration: BoxDecoration(
-                  color: Colors.cyan[50],
-                  borderRadius: BorderRadius.all(Radius.circular(10.0))),
-              child: Stack(children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Container(
-                            height: 50,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('PC',
-                                style: TextStyle(fontSize: 15))),
-                        Container(),
-                        Container(
-                            height: 100,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('Instruction Memory',
-                                style: TextStyle(fontSize: 15))),
-                      ],
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Container(
-                            height: 70,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('IsBranch\n Mux',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 15))),
-                        Container(
-                            height: 60,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('Adder',
-                                style: TextStyle(fontSize: 15))),
-                        Container(
-                            height: 100,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('Register File',
-                                style: TextStyle(fontSize: 15))),
-                        Container(
-                            height: 50,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('Sign Ext',
-                                style: TextStyle(fontSize: 15))),
-                      ],
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Container(),
-                        Container(
-                            height: 70,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('BranchTargetSelect\nMux',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 15))),
-                        Container(),
-                        Container(
-                            height: 70,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('Op2 Select\nMux',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 15))),
-                      ],
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Container(
-                            height: 60,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('Adder',
-                                style: TextStyle(fontSize: 15))),
-                        Container(),
-                        Container(
-                            height: 80,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('Result Select\nMux',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(fontSize: 15))),
-                        Container(),
-                        Container(
-                            height: 80,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text('ALU',
-                                style: TextStyle(fontSize: 15)))
-                      ],
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Container(),
-                        Container(
-                            height: 150,
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                                border:
-                                Border.all(width: 5, color: Colors.blue),
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(10.0))),
-                            child: const Text(
-                                'Mem Addr\t\tRead Data\n\n\t\tData Memory\n\nData Write',
-                                style: TextStyle(fontSize: 15))),
-                      ],
-                    ),
-                  ],
-                ),
-                ClipRect(
-                  child: CustomPaint(
-                    size: Size(MediaQuery.of(context).size.width - 500,
-                        MediaQuery.of(context).size.height),
-                    painter: ArrowPainter(),
-                  ),
-                ),
-              ]),
-            ),
+            const SizedBox(width: 15),
+            const ExecutionDiagram()
           ],
         ),
+      ),
+    );
+  }
+}
+
+class ExecutionDiagram extends StatefulWidget {
+  const ExecutionDiagram({Key? key}) : super(key: key);
+
+  @override
+  State<ExecutionDiagram> createState() => _ExecutionDiagramState();
+}
+
+class _ExecutionDiagramState extends State<ExecutionDiagram> {
+  final ScrollController _mycontroller = new ScrollController();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      controller: _mycontroller,
+      child: Container(
+        width: 1000,
+        height: 800,
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+            color: Colors.cyan[50],
+            borderRadius: const BorderRadius.all(Radius.circular(10.0))),
+        child: Stack(children: <Widget>[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(
+                      height: 50,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('PC', style: TextStyle(fontSize: 15))),
+                  Container(),
+                  Container(
+                      height: 100,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('Instruction Memory',
+                          style: TextStyle(fontSize: 15))),
+                ],
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(
+                      height: 70,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('IsBranch\n Mux',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 15))),
+                  Container(
+                      height: 60,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child:
+                          const Text('Adder', style: TextStyle(fontSize: 15))),
+                  Container(
+                      height: 100,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('Register File',
+                          style: TextStyle(fontSize: 15))),
+                  Container(
+                      height: 50,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('Sign Ext',
+                          style: TextStyle(fontSize: 15))),
+                ],
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(),
+                  Container(
+                      height: 70,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('BranchTargetSelect\nMux',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 15))),
+                  Container(),
+                  Container(
+                      height: 70,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('Op2 Select\nMux',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 15))),
+                ],
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(
+                      height: 60,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child:
+                          const Text('Adder', style: TextStyle(fontSize: 15))),
+                  Container(),
+                  Container(
+                      height: 80,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('Result Select\nMux',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 15))),
+                  Container(),
+                  Container(
+                      height: 80,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text('ALU', style: TextStyle(fontSize: 15)))
+                ],
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Container(),
+                  Container(
+                      height: 150,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(width: 5, color: Colors.blue),
+                          borderRadius:
+                              BorderRadius.all(Radius.circular(10.0))),
+                      child: const Text(
+                          'Mem Addr    Read Data\n\n       DATA MEMORY\n\nData Write',
+                          style: TextStyle(fontSize: 15))),
+                ],
+              ),
+            ],
+          ),
+          ClipRect(
+            child: CustomPaint(
+              size: const Size(1000, 800),
+              painter: ArrowPainter(),
+            ),
+          ),
+        ]),
       ),
     );
   }
@@ -1139,8 +1276,8 @@ class ArrowPainter extends CustomPainter {
     {
       Path path = Path();
       path.moveTo(size.width * .25, size.height * .15);
-      path.relativeLineTo(-size.width*.125, 0);
-      path.relativeLineTo(0, size.height*.035);
+      path.relativeLineTo(-size.width * .125, 0);
+      path.relativeLineTo(0, size.height * .035);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
     }
@@ -1243,8 +1380,8 @@ class ArrowPainter extends CustomPainter {
     {
       Path path = Path();
       path.moveTo(size.width * .9, size.height * .52);
-      path.relativeLineTo(0, -size.height*.04);
-      path.relativeLineTo(-size.width*.17, 0);
+      path.relativeLineTo(0, -size.height * .04);
+      path.relativeLineTo(-size.width * .17, 0);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
       final TextSpan textSpan = TextSpan(
@@ -1264,8 +1401,8 @@ class ArrowPainter extends CustomPainter {
     {
       Path path = Path();
       path.moveTo(size.width * .57, size.height * .335);
-      path.relativeLineTo(size.width*.11, 0);
-      path.relativeLineTo(0, -size.height*.125);
+      path.relativeLineTo(size.width * .11, 0);
+      path.relativeLineTo(0, -size.height * .125);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
     }
@@ -1314,8 +1451,8 @@ class ArrowPainter extends CustomPainter {
     {
       Path path = Path();
       path.moveTo(size.width * .61, size.height * .47);
-      path.relativeLineTo(-size.width*.27, 0);
-      path.relativeLineTo(0, size.height*.065);
+      path.relativeLineTo(-size.width * .27, 0);
+      path.relativeLineTo(0, size.height * .065);
       path = ArrowPath.make(path: path);
       canvas.drawPath(path, paint..color = Colors.black);
     }
@@ -1578,4 +1715,122 @@ class ArrowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(ArrowPainter oldDelegate) => false;
+}
+
+class Pipelined extends StatefulWidget {
+  const Pipelined({Key? key}) : super(key: key);
+
+  @override
+  State<Pipelined> createState() => _PipelinedState();
+}
+
+class _PipelinedState extends State<Pipelined> {
+  void myFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mc'],
+    );
+    if (result == null) return;
+    PlatformFile myFile = result.files.single;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: const Text('Pipelined Execution'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.file_open),
+            tooltip: 'Select .mc file',
+            onPressed: () {
+              myFilePicker();
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('Information'),
+                  content: const Text(
+                      'If a file is selected, the output file will be created in the same directory.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'OK'),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            Column(
+              children: [
+                Container(
+                    width: 500,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            int a;
+                          },
+                          child: const Text('Step'),
+                        ),
+                        ElevatedButton(
+                            onPressed: () {
+                              int a;
+                            },
+                            child: const Text('Run')),
+                        ElevatedButton(
+                            onPressed: () {
+                              int a;
+                            },
+                            child: const Text('Reset')),
+                      ],
+                    )),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                    child: Container(
+                  width: 500,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 1,
+                    ),
+                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: SelectableText(
+                      'displayTxt',
+                      textAlign: TextAlign.left,
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 18.0,
+                      ),
+                    ),
+                  ),
+                ))
+              ],
+            ),
+            const SizedBox(width: 15),
+            const ExecutionDiagram(),
+          ],
+        ),
+      ),
+    );
+  }
 }
