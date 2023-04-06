@@ -66,7 +66,6 @@ class MyHomeScreen extends StatelessWidget {
         body: const HomeBody());
   }
 }
-
 class HomeBody extends StatelessWidget {
   const HomeBody({super.key});
 
@@ -97,7 +96,6 @@ class SingleCycle extends StatefulWidget {
   @override
   State<SingleCycle> createState() => _SingleCycleState();
 }
-
 class _SingleCycleState extends State<SingleCycle> {
   String outputTxt = '', displayTxt = '', displayReg = '';
   PlatformFile? myFile;
@@ -248,7 +246,7 @@ class _SingleCycleState extends State<SingleCycle> {
       instr += (1 << 32);
     }
     outputTxt +=
-        'FETCH: Read instruction 0x${'0' * (8 - instr.toRadixString(16).length)}${instr.toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
+    'FETCH: Read instruction 0x${'0' * (8 - instr.toRadixString(16).length)}${instr.toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
   }
 
   void decode() {
@@ -401,7 +399,7 @@ class _SingleCycleState extends State<SingleCycle> {
           outputTxt += "SRA, ";
       }
       outputTxt +=
-          "rs1 is x${rs1}, rs2 is x${rs2} and destination register is x${rd}.\n";
+      "rs1 is x${rs1}, rs2 is x${rs2} and destination register is x${rd}.\n";
     } else if (type == 19) {
       if (funct3 == 0) {
         outputTxt += "ADDI, ";
@@ -411,7 +409,7 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "ANDI, ";
       }
       outputTxt +=
-          "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+      "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
     } else if (type == 3) {
       if (funct3 == 0) {
         outputTxt += "LB, ";
@@ -421,10 +419,10 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "LW, ";
       }
       outputTxt +=
-          "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+      "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
     } else if (type == 103) {
       outputTxt +=
-          "JALR, rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+      "JALR, rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
     } else if (type == 35) {
       if (funct3 == 0) {
         outputTxt += "SB, ";
@@ -434,7 +432,7 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "SW, ";
       }
       outputTxt +=
-          "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+      "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
     } else if (type == 99) {
       if (funct3 == 0) {
         outputTxt += "BEQ, ";
@@ -446,7 +444,7 @@ class _SingleCycleState extends State<SingleCycle> {
         outputTxt += "BGE, ";
       }
       outputTxt +=
-          "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+      "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
     } else if (type == 111) {
       outputTxt += "JAL, immediate is ${immediate} and rd is x${rd}.\n";
     } else if (type == 55) {
@@ -520,7 +518,7 @@ class _SingleCycleState extends State<SingleCycle> {
           }
         }
         break;
-      //list use for srl
+    //list use for srl
       case 6:
         {
           outputTxt += "LOGICAL SHIFT right ${operand1} ${temp} times.\n";
@@ -684,13 +682,7 @@ class _SingleCycleState extends State<SingleCycle> {
       if (val < 0) {
         val = (1 << 32) + val;
       }
-      adress = "0x" +
-          '0' * (8 - adress.length) +
-          adress +
-          "\t\t\t0x" +
-          '0' * (8 - val.toRadixString(16).length) +
-          val.toRadixString(16) +
-          "\n";
+      adress = "0x${'0' * (8 - adress.length)}$adress\t\t\t0x${'0' * (8 - val.toRadixString(16).length)}${val.toRadixString(16)}\n";
       myOutFile.writeAsStringSync(adress, mode: FileMode.append);
     }
   }
@@ -811,49 +803,49 @@ class _SingleCycleState extends State<SingleCycle> {
         children: [
           Container(
             height: 25,
-            child: Text("x${i}:\t\t${rf[i]}"),
+            child: Text("x${i}: ${rf[i]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 1}:\t\t${rf[i + 1]}"),
+            child: Text("x${i + 1}: ${rf[i + 1]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 2}:\t\t${rf[i + 2]}"),
+            child: Text("x${i + 2}: ${rf[i + 2]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 3}:\t\t${rf[i + 3]}"),
+            child: Text("x${i + 3}: ${rf[i + 3]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 4}:\t\t${rf[i + 4]}"),
+            child: Text("x${i + 4}: ${rf[i + 4]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 5}:\t\t${rf[i + 5]}"),
+            child: Text("x${i + 5}: ${rf[i + 5]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 6}:\t\t${rf[i + 6]}"),
+            child: Text("x${i + 6}: ${rf[i + 6]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 7}:\t\t${rf[i + 7]}"),
+            child: Text("x${i + 7}: ${rf[i + 7]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 8}:\t\t${rf[i + 8]}"),
+            child: Text("x${i + 8}: ${rf[i + 8]}"),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 9}:\t\t${rf[i + 9]}"),
+            child: Text("x${i + 9}: ${rf[i + 9]}"),
           ),
           if(i!=22)
-          Container(
-            height: 25,
-            child: Text("x${i + 10}:\t\t${rf[i + 10]}"),
-          ),
+            Container(
+              height: 25,
+              child: Text("x${i + 10}: ${rf[i + 10]}"),
+            ),
         ],
       ));
     }
@@ -946,61 +938,61 @@ class _SingleCycleState extends State<SingleCycle> {
                 ),
                 Expanded(
                     child: Container(
-                  width: 500,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: SelectableText(
-                      displayTxt,
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 18.0,
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
                       ),
-                    ),
-                  ),
-                )),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SelectableText(
+                          displayTxt,
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                      ),
+                    )),
                 const SizedBox(height: 5),
                 Expanded(
                     child: Container(
-                  width: 500,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: Column(
-                      children: [
-                        const Text(
-                          "Register File",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 20),
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
                         ),
-                        const SizedBox(
-                          height: 10,
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Register File",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            if (myFile != null)
+                              displayRF(outputReg[displayStep].split('-')),
+                          ],
                         ),
-                        if (myFile != null)
-                          displayRF(outputReg[displayStep].split('-')),
-                      ],
-                    ),
-                  ),
-                ))
+                      ),
+                    ))
               ],
             ),
             const SizedBox(width: 15),
-            const ExecutionDiagram()
+            ExecutionDiagram(isPipelined: false,)
           ],
         ),
       ),
@@ -1009,12 +1001,12 @@ class _SingleCycleState extends State<SingleCycle> {
 }
 
 class ExecutionDiagram extends StatefulWidget {
-  const ExecutionDiagram({Key? key}) : super(key: key);
+  bool? isPipelined;
+  ExecutionDiagram({Key? key,required isPipelined}) : super(key: key);
 
   @override
   State<ExecutionDiagram> createState() => _ExecutionDiagramState();
 }
-
 class _ExecutionDiagramState extends State<ExecutionDiagram> {
   final ScrollController _mycontroller = new ScrollController();
 
@@ -1025,7 +1017,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
       controller: _mycontroller,
       child: Container(
         width: 1000,
-        height: 800,
+        height: 700,
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
             color: Colors.cyan[50],
@@ -1045,7 +1037,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          const BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('PC', style: TextStyle(fontSize: 15))),
                   Container(),
                   Container(
@@ -1056,7 +1048,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          const BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('Instruction Memory',
                           style: TextStyle(fontSize: 15))),
                 ],
@@ -1071,7 +1063,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                       decoration: const BoxDecoration(
                           color: Colors.greenAccent,
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('IsBranch\n Mux',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 15))),
@@ -1083,9 +1075,9 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child:
-                          const Text('Adder', style: TextStyle(fontSize: 15))),
+                      const Text('Adder', style: TextStyle(fontSize: 15))),
                   Container(
                       height: 100,
                       alignment: Alignment.center,
@@ -1094,7 +1086,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('Register File',
                           style: TextStyle(fontSize: 15))),
                   Container(
@@ -1105,7 +1097,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('Sign Ext',
                           style: TextStyle(fontSize: 15))),
                 ],
@@ -1121,7 +1113,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                       decoration: const BoxDecoration(
                           color: Colors.greenAccent,
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('BranchTargetSelect\nMux',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 15))),
@@ -1133,7 +1125,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                       decoration: const BoxDecoration(
                           color: Colors.greenAccent,
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('Op2 Select\nMux',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 15))),
@@ -1150,9 +1142,9 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child:
-                          const Text('Adder', style: TextStyle(fontSize: 15))),
+                      const Text('Adder', style: TextStyle(fontSize: 15))),
                   Container(),
                   Container(
                       height: 80,
@@ -1161,7 +1153,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                       decoration: const BoxDecoration(
                           color: Colors.greenAccent,
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('Result Select\nMux',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 15))),
@@ -1174,7 +1166,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text('ALU', style: TextStyle(fontSize: 15)))
                 ],
               ),
@@ -1190,7 +1182,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                           color: Colors.white,
                           border: Border.all(width: 5, color: Colors.blue),
                           borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
+                          BorderRadius.all(Radius.circular(10.0))),
                       child: const Text(
                           'Mem Addr    Read Data\n\n       DATA MEMORY\n\nData Write',
                           style: TextStyle(fontSize: 15))),
@@ -1209,7 +1201,6 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
     );
   }
 }
-
 class ArrowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -1717,13 +1708,17 @@ class ArrowPainter extends CustomPainter {
   bool shouldRepaint(ArrowPainter oldDelegate) => false;
 }
 
+
+
+
+
+
 class Pipelined extends StatefulWidget {
   const Pipelined({Key? key}) : super(key: key);
 
   @override
   State<Pipelined> createState() => _PipelinedState();
 }
-
 class _PipelinedState extends State<Pipelined> {
   void myFilePicker() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1774,6 +1769,7 @@ class _PipelinedState extends State<Pipelined> {
         child: Row(
           children: [
             Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Container(
                     width: 500,
@@ -1781,20 +1777,38 @@ class _PipelinedState extends State<Pipelined> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: () {
-                            int a;
-                          },
+                          onPressed: () =>null,
+                          // {
+                          //   if (!outputRan &&
+                          //       displayStep < outputLines.length) {
+                          //     displayStep++;
+                          //     displayTxt += '${outputLines[displayStep]}\n\n';
+                          //     displayOutput();
+                          //   }
+                          // },
                           child: const Text('Step'),
                         ),
                         ElevatedButton(
-                            onPressed: () {
-                              int a;
-                            },
+                            onPressed: () =>null,
+                            // {
+                            //   if (!outputRan) {
+                            //     outputRan = true;
+                            //     displayTxt = outputTxt;
+                            //     if (myFile != null) {
+                            //       displayStep = outputReg.length - 1;
+                            //     }
+                            //     displayOutput();
+                            //   }
+                            // },
                             child: const Text('Run')),
                         ElevatedButton(
-                            onPressed: () {
-                              int a;
-                            },
+                            onPressed: () =>null,
+                            // {
+                            //   outputRan = false;
+                            //   displayTxt = '${outputLines[0]}\n\n';
+                            //   displayStep = 0;
+                            //   displayOutput();
+                            // },
                             child: const Text('Reset')),
                       ],
                     )),
@@ -1803,31 +1817,61 @@ class _PipelinedState extends State<Pipelined> {
                 ),
                 Expanded(
                     child: Container(
-                  width: 500,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 1,
-                    ),
-                    borderRadius: const BorderRadius.all(Radius.circular(10)),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.vertical,
-                    child: SelectableText(
-                      'displayTxt',
-                      textAlign: TextAlign.left,
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 18.0,
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
                       ),
-                    ),
-                  ),
-                ))
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SelectableText(
+                          'displayTxt',
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                      ),
+                    )),
+                const SizedBox(height: 5),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Register File",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            // if (myFile != null)
+                            //   displayRF(outputReg[displayStep].split('-')),
+                          ],
+                        ),
+                      ),
+                    ))
               ],
             ),
             const SizedBox(width: 15),
-            const ExecutionDiagram(),
+            ExecutionDiagram(isPipelined: false,)
           ],
         ),
       ),
