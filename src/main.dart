@@ -1013,10 +1013,13 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
   createBox(String text,int type, VoidCallback func, double height, double width){
     return ElevatedButton(
       onPressed: func,
-      style: ElevatedButton.styleFrom(primary:Colors.deepPurpleAccent,minimumSize: Size(width, height)),
+      style: ElevatedButton.styleFrom(primary:(type==5)?Colors.black54:Colors.deepPurpleAccent,minimumSize: Size(width, height)),
       child: Container(
         alignment: Alignment.center,
-        child: Text(text,textAlign: TextAlign.center,),
+        child: (type==5)?RotatedBox(
+          quarterTurns: -1,
+          child: Text(text,style: const TextStyle(fontSize: 10),),
+        ):Text(text,textAlign: TextAlign.center,),
       )
     );
   }
@@ -1111,6 +1114,19 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
               ),//Writeback
             ],
           ),
+          if(widget.isPipelined!)
+            Row(
+              children: [
+                const SizedBox(width: 180,),
+                createBox('Fetch-Decode', 5, () { }, 700, 10),
+                const SizedBox(width: 160,),
+                createBox('Decode-Execute', 5, () { }, 700, 10),
+                const SizedBox(width: 140,),
+                createBox('Execute-Memory', 5, () { }, 700, 10),
+                const SizedBox(width: 180,),
+                createBox('Memory-WriteBack', 5, () { }, 700, 10),
+              ],
+            ),
 
 
         ]),
