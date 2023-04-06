@@ -20,53 +20,52 @@ class MyHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
         drawer: Drawer(
-          child:ListView(
+          child: ListView(
             children: [
               const DrawerHeader(
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent,
-                  borderRadius: BorderRadius.only(
-                    bottomRight: Radius.circular(10),
-                  )
-                ),
+                    color: Colors.blueAccent,
+                    borderRadius: BorderRadius.only(
+                      bottomRight: Radius.circular(10),
+                    )),
                 child: Text(
-                    'Execution\nType',
-                    textAlign: TextAlign.left,
-                    style: TextStyle(fontSize: 30,fontWeight: FontWeight.bold,color: Colors.white),
-                  ),
+                  'Execution\nType',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
               ),
               ListTile(
-                  title: const Text('Single Cycle'),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const SingleCycle(),
-                      ),
-                    );
-                  },
-                ),
+                title: const Text('Single Cycle'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SingleCycle(),
+                    ),
+                  );
+                },
+              ),
               ListTile(
-                  title: const Text('Pipelined'),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const Pipelined(),
-                      ),
-                    );
-                  },
-                ),
+                title: const Text('Pipelined'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const Pipelined(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
-
         ),
         appBar: AppBar(
           title: const Text('RISCV-32I Simulator'),
         ),
-        body: const HomeBody()
-    );
+        body: const HomeBody());
   }
 }
-
 class HomeBody extends StatelessWidget {
   const HomeBody({super.key});
 
@@ -94,14 +93,14 @@ class HomeBody extends StatelessWidget {
 class SingleCycle extends StatefulWidget {
   const SingleCycle({Key? key}) : super(key: key);
 
-
   @override
   State<SingleCycle> createState() => _SingleCycleState();
 }
-
 class _SingleCycleState extends State<SingleCycle> {
-  String outputTxt = '', displayTxt = '';
+  String outputTxt = '', displayTxt = '', displayReg = '';
+  PlatformFile? myFile;
   List<String> outputLines = [];
+  List<String> outputReg = [];
   int clock = 0,
       displayStep = 0,
       aluresult = 0,
@@ -124,10 +123,10 @@ class _SingleCycleState extends State<SingleCycle> {
       isBranch = false,
       running = true;
   List n = [];
-  final RF = List<int>.filled(32, 0);
-  final b = List<int>.filled(32, 0);
-  final im = List<int>.filled(32, 0);
-  final t = List<int>.filled(32, 0);
+  var RF = List<int>.filled(32, 0);
+  var b = List<int>.filled(32, 0);
+  var im = List<int>.filled(32, 0);
+  var t = List<int>.filled(32, 0);
   Map<int, int> MEM = Map<int, int>();
 
   void dec2bin(int value) {
@@ -623,6 +622,18 @@ class _SingleCycleState extends State<SingleCycle> {
       else
         RF[0] = 0;
     }
+    var str = "\n\n";
+    if (displayReg == '') {
+      str = '';
+    }
+    for (int i = 0; i < 32; i++) {
+      if (i != 0) {
+        str += "-";
+      }
+      str += RF[i].toString();
+    }
+    displayReg += str;
+
     if (isBranch == true) {
       pc = branchtarget;
     } else
@@ -671,18 +682,12 @@ class _SingleCycleState extends State<SingleCycle> {
       if (val < 0) {
         val = (1 << 32) + val;
       }
-      adress = "0x" +
-          '0' * (8 - adress.length) +
-          adress +
-          "\t\t\t0x" +
-          '0' * (8 - val.toRadixString(16).length) +
-          val.toRadixString(16) +
-          "\n";
+      adress = "0x${'0' * (8 - adress.length)}$adress\t\t\t0x${'0' * (8 - val.toRadixString(16).length)}${val.toRadixString(16)}\n";
       myOutFile.writeAsStringSync(adress, mode: FileMode.append);
     }
   }
 
-  void run_riscvsim(File f) {
+  void runRiscvSim(File f) {
     pc = 0;
     clock = 0;
     displayStep = 0;
@@ -697,6 +702,8 @@ class _SingleCycleState extends State<SingleCycle> {
       outputTxt += 'CLOCK CYCLES ELAPSED = $clock\n\n';
     }
     outputLines = outputTxt.split('\n\n');
+    outputReg = displayReg.split('\n\n');
+    print(outputReg);
   }
 
   void load_progmem() {
@@ -764,10 +771,8 @@ class _SingleCycleState extends State<SingleCycle> {
     outputRan = false;
     RF[2] = 2147483644;
     load_progmem();
-    run_riscvsim(outputFile);
+    runRiscvSim(outputFile);
   }
-
-
 
   void displayOutput() {
     setState(() {
@@ -781,15 +786,75 @@ class _SingleCycleState extends State<SingleCycle> {
       allowedExtensions: ['mc'],
     );
     if (result == null) return;
-    PlatformFile myFile = result.files.single;
+    myFile = result.files.single;
     outputTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
     displayTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
-    singleCycleCode(myFile);
+
+    singleCycleCode(myFile!);
     displayOutput();
+  }
+
+  Widget displayRF(List<String> rf) {
+    var RFlist = <Widget>[];
+    for (int i = 0; i < 33; i+=11) {
+      RFlist.add(Column(
+        //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+
+        children: [
+          Container(
+            height: 25,
+            child: Text("x${i}: ${rf[i]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 1}: ${rf[i + 1]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 2}: ${rf[i + 2]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 3}: ${rf[i + 3]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 4}: ${rf[i + 4]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 5}: ${rf[i + 5]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 6}: ${rf[i + 6]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 7}: ${rf[i + 7]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 8}: ${rf[i + 8]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 9}: ${rf[i + 9]}"),
+          ),
+          if(i!=22)
+            Container(
+              height: 25,
+              child: Text("x${i + 10}: ${rf[i + 10]}"),
+            ),
+        ],
+      ));
+    }
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,crossAxisAlignment: CrossAxisAlignment.start,children: RFlist);
   }
 
   @override
   Widget build(BuildContext context) {
+    //print(displayReg);
     return Scaffold(
       appBar: AppBar(
         leading: BackButton(
@@ -828,15 +893,17 @@ class _SingleCycleState extends State<SingleCycle> {
         child: Row(
           children: [
             Column(
-                children: [
-                  Container(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(
                     width: 500,
-                    child:Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                            if (!outputRan && displayStep < outputLines.length) {
+                            if (!outputRan &&
+                                displayStep < outputLines.length) {
                               displayStep++;
                               displayTxt += '${outputLines[displayStep]}\n\n';
                               displayOutput();
@@ -849,6 +916,9 @@ class _SingleCycleState extends State<SingleCycle> {
                               if (!outputRan) {
                                 outputRan = true;
                                 displayTxt = outputTxt;
+                                if (myFile != null) {
+                                  displayStep = outputReg.length - 1;
+                                }
                                 displayOutput();
                               }
                             },
@@ -862,12 +932,11 @@ class _SingleCycleState extends State<SingleCycle> {
                             },
                             child: const Text('Reset')),
                       ],
-                    )
-                  ),
-                  const SizedBox(
-                    height: 10,
-                  ),
-                  Expanded(
+                    )),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
                     child: Container(
                       width: 500,
                       padding: const EdgeInsets.all(10),
@@ -878,7 +947,7 @@ class _SingleCycleState extends State<SingleCycle> {
                         ),
                         borderRadius: const BorderRadius.all(Radius.circular(10)),
                       ),
-                      child:SingleChildScrollView(
+                      child: SingleChildScrollView(
                         scrollDirection: Axis.vertical,
                         child: SelectableText(
                           displayTxt,
@@ -888,13 +957,42 @@ class _SingleCycleState extends State<SingleCycle> {
                             fontSize: 18.0,
                           ),
                         ),
-                    ),
-                  )
-                  )
-                ],
+                      ),
+                    )),
+                const SizedBox(height: 5),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Register File",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            if (myFile != null)
+                              displayRF(outputReg[displayStep].split('-')),
+                          ],
+                        ),
+                      ),
+                    ))
+              ],
             ),
             const SizedBox(width: 15),
-            const ExecutionDiagram()
+            ExecutionDiagram(isPipelined: false,)
           ],
         ),
       ),
@@ -903,732 +1001,198 @@ class _SingleCycleState extends State<SingleCycle> {
 }
 
 class ExecutionDiagram extends StatefulWidget {
-  const ExecutionDiagram({Key? key}) : super(key: key);
+  bool isPipelined=false;
+  ExecutionDiagram({Key? key,required this.isPipelined});
 
   @override
   State<ExecutionDiagram> createState() => _ExecutionDiagramState();
 }
-
 class _ExecutionDiagramState extends State<ExecutionDiagram> {
-
   final ScrollController _mycontroller = new ScrollController();
 
+  createBox(String text,int type, VoidCallback func, double height, double width){
+    return ElevatedButton(
+      onPressed: func,
+      style: ElevatedButton.styleFrom(primary:Colors.deepPurpleAccent,minimumSize: Size(width, height)),
+      child: Container(
+        alignment: Alignment.center,
+        child: Text(text,textAlign: TextAlign.center,),
+      )
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       controller: _mycontroller,
-      child:Container(
+      child: Container(
         width: 1000,
-        height: 800,
+        height: 700,
         padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
-            color: Colors.cyan[50],
-            borderRadius: const BorderRadius.all(Radius.circular(10.0))
-        ),
-        child: Stack(
-            children: <Widget>[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            color: Colors.cyan[200],
+            borderRadius: const BorderRadius.all(Radius.circular(10.0))),
+        child: Stack(children: <Widget>[
+          if(widget.isPipelined!)
+            Row(
+              children: [
+                Container(height: 700,width: 200,),
+                Container(height: 700,width: 200,color: Colors.white30,),
+                Container(height: 700,width: 200,),
+                Container(height: 700,width: 200,color: Colors.white30,),
+                Container(height: 700,width: 180,)
+              ],
+            ),
+          ClipRect(
+            child: CustomPaint(
+              size: const Size(1000, 800),
+              painter: ArrowPainter(),
+            ),
+          ),
+          Row(
+            //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(
-                          height: 50,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text('PC',
-                              style: TextStyle(fontSize: 15))),
-                      Container(),
-                      Container(
-                          height: 100,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text('Instruction Memory',
-                              style: TextStyle(fontSize: 15))),
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(
-                          height: 70,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration:const BoxDecoration(
-                              color: Colors.greenAccent,
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))
-                          ),
-                          child: const Text('IsBranch\n Mux',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 15))),
-                      Container(
-                          height: 60,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text('Adder',
-                              style: TextStyle(fontSize: 15))),
-                      Container(
-                          height: 100,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text('Register File',
-                              style: TextStyle(fontSize: 15))),
-                      Container(
-                          height: 50,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text('Sign Ext',
-                              style: TextStyle(fontSize: 15))),
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(),
-                      Container(
-                          height: 70,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                              color: Colors.greenAccent,
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))
-                          ),
-                          child: const Text('BranchTargetSelect\nMux',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 15))),
-                      Container(),
-                      Container(
-                          height: 70,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: const BoxDecoration(
-                              color: Colors.greenAccent,
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))
-                          ),
-                          child: const Text('Op2 Select\nMux',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 15))),
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(
-                          height: 60,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text('Adder',
-                              style: TextStyle(fontSize: 15))),
-                      Container(),
-                      Container(
-                          height: 80,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration:const BoxDecoration(
-                              color: Colors.greenAccent,
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))
-                          ),
-                          child: const Text('Result Select\nMux',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 15))),
-                      Container(),
-                      Container(
-                          height: 80,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text('ALU',
-                              style: TextStyle(fontSize: 15)))
-                    ],
-                  ),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Container(),
-                      Container(
-                          height: 150,
-                          alignment: Alignment.center,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              border:
-                              Border.all(width: 5, color: Colors.blue),
-                              borderRadius:
-                              BorderRadius.all(Radius.circular(10.0))),
-                          child: const Text(
-                              'Mem Addr    Read Data\n\n       DATA MEMORY\n\nData Write',
-                              style: TextStyle(fontSize: 15))),
-                    ],
-                  ),
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 50,),
+                  createBox('IsBranch\nMux', 2, () {return null;}, 100, 70),
+                  const SizedBox(height: 70,),
+                  createBox('PC', 1, () {return null;}, 50, 80), // PC
+                  const SizedBox(height: 100,),
+                  createBox('Instruction\nMemory', 1, () {return null;}, 180, 130),
                 ],
-              ),
-              ClipRect(
-                child: CustomPaint(
-                  size: const Size(1000,800),
-                  painter: ArrowPainter(),
-                ),
-              ),
-            ]
-        ),
+              ),//Fetch
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 100,),
+                  createBox('Adder', 3, () {return null;}, 50, 50),
+                  const SizedBox(height: 120,),
+                  createBox('Sign\nExt.', 3, () { return null;}, 160, 70),
+                  const SizedBox(height: 30,),
+                  createBox('Register\nFile', 0, () {return null;}, 150, 130),
+                ],
+              ),//Decode
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 60,),
+                  createBox('Adder', 3, () {}, 70, 70),
+                  const SizedBox(height: 40,),
+                  createBox('Branch Target\nSelect Mux', 2, () {}, 100, 100),
+                  const SizedBox(height: 100,),
+                  createBox('OP2\nSelect\nMux', 2, () { }, 100, 70),
+                  const SizedBox(height: 70,),
+                  createBox('ALU', 1, () { }, 120, 120),
+
+                ],
+              ),//Execute
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 400,),
+                  createBox('DATA\nMEMORY', 0, () { }, 160, 170),
+                ],
+              ),//Memory
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 180,),
+                  const SizedBox(height: 300,),
+                  createBox('Result\nSelect\nMux', 2, () { }, 200, 70),
+                ],
+              ),//Writeback
+            ],
+          ),
+
+
+        ]),
       ),
     );
   }
 }
-
 class ArrowPainter extends CustomPainter {
+  createArrow(double x1,double y1,double x2,double y2,double x3,double y3,double x4,double y4,Canvas canvas,Paint paint){
+    Path path = Path();
+    path.moveTo(x1, y1);
+    path.relativeLineTo(x2,y2);
+    path.relativeLineTo(x3,y3);
+    path.relativeLineTo(x4,y4);
+    path = ArrowPath.make(path: path);
+    canvas.drawPath(path, paint);
+  }
   @override
   void paint(Canvas canvas, Size size) {
-    /// The arrows usually looks better with rounded caps.
-    final Paint paint = Paint()
-      ..color = Colors.black
+     Paint paint = Paint()
+      ..color = Colors.black54
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = 2.0;
+      ..strokeWidth = 3.0;
 
-    /// PC to Instruction Memory arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .12, size.height * .28);
-      path.relativeLineTo(0, size.height * .38);
-      //path.relativeCubicTo(0, 0, 230, 490, 0, 0);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
+     createArrow(100, 150, 0, 70, 0, 0, 0, 0, canvas, paint);//Isbranch to pc
+     createArrow(100, 270, 0, 100, 0, 0, 0, 0, canvas, paint);//pc to IM
+     createArrow(100, 245, 190, 0, 0, -95, 0, 0, canvas, paint);//pc to adder
+     createArrow(320, 245, 0, -95, 0, 0, 0, 0, canvas, paint);//4 to adder
+     createArrow(300, 125, -200, 0, 0, 0, 0, 0, canvas, paint);//adder to isbranch
+     createArrow(500, 95, -400, 0, 0, 0, 0, 0, canvas, paint); //Branch Target Address Arrow
+     createArrow(300, 65, -200, 0, 0, 0, 0, 0, canvas, paint);//ALU result to IsBranch Arrow
+     createArrow(500, 600, 200, 0, 0, -40, 0, 0, canvas, paint);//ALU to memory
+     createArrow(700, 600, 110, 0, 0, -140, 50, 0, canvas, paint);//ALU to ResultSelect
+     createArrow(500, 410, 200, 0, 0, 0, 0, 0, canvas, paint);//op2select to mem
+     createArrow(700, 430, 190, 0, 0, 0, 0, 0, canvas, paint);//mem to result select
+     createArrow(600, 75, -100, 0, 0, 0, 0, 0, canvas, paint);//pc to branch adder
+     createArrow(500, 200, 100, 0, 0, -100, -100, 0, canvas, paint);// branch target to adder
+     createArrow(780, 370, 110, 0, 0, 0, 0, 0, canvas, paint);// pc r select
+     createArrow(300, 330, 590, 0, 0, 0, 0, 0, canvas, paint);// immu "
+     createArrow(890, 500, 0, 160, -580, 0, 0, -120, canvas, paint);    // result select to rf
+     createArrow(500, 470, 0, 70, 0, 0, 0, 0, canvas, paint);    //OP2 Select to ALU
+     createArrow(300, 550, 200, 0, 0, 0, 0, 0, canvas, paint); //RF to ALU
+     createArrow(100, 460, 200, 0, 0, 0, 0, 0, canvas, paint); // rs1 to rf
+     createArrow(100, 490, 200, 0, 0, 0, 0, 0, canvas, paint); // rs1 to rf
+     createArrow(100, 380, 200, 0, 0, 0, 0, 0, canvas, paint); // IM to sign ext
+     createArrow(300, 500, 100, 0, 0, -70, 100, 0, canvas, paint); //RF to op2select
+     createArrow(300, 370, 200, 0, 0, 0, 0, 0, canvas, paint); //sign ext to op2sel
+     createArrow(300, 400, 200, 0, 0, 0, 0, 0, canvas, paint); //sign ext to op2sel
+     createArrow(300, 300, 180, 0, 0, -40, 0, 0, canvas, paint);//sign ext to branch select
+     createArrow(300, 315, 220, 0, 0, -55, 0, 0, canvas, paint);//sign ext to branch select
 
-    ///PC to Adder Arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .12, size.height * .37);
-      path.relativeLineTo(size.width * .147, 0);
 
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
 
-    /// 4 to Adder Arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .23, size.height * .4);
-      path.relativeLineTo(size.width * .036, 0);
 
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: '4',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .26, size.height * .4));
-    }
+     // {
+    //   final TextSpan textSpan = TextSpan(
+    //     text: '4',
+    //     style: TextStyle(color: Colors.black, fontSize: 16),
+    //   );
+    //   final TextPainter textPainter = TextPainter(
+    //     text: textSpan,
+    //     textAlign: TextAlign.center,
+    //     textDirection: TextDirection.ltr,
+    //   );
+    //   textPainter.layout(minWidth: size.width);
+    //   textPainter.paint(canvas, Offset(-size.width * .26, size.height * .4));
+    // }
 
-    ///Adder to IsBranch Arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .31, size.height * .33);
-      path.relativeLineTo(0, -size.height * .1);
 
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
 
-    ///IsBranch to PC Arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .25, size.height * .15);
-      path.relativeLineTo(-size.width*.125, 0);
-      path.relativeLineTo(0, size.height*.035);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
-
-    ///Branch Target Address Arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .63, size.height * .185);
-      path.relativeLineTo(-size.width * .27, 0);
-
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'Branch Target Address',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .04, size.height * .145));
-    }
-
-    ///ALU result to IsBranch Arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .465, size.height * .13);
-      path.relativeLineTo(-size.width * .105, 0);
-
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'ALU Result',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .08, size.height * .1));
-    }
-
-    ///ALU to ResultSelect Arrow
-    {
-      Path path = Path();
-      path.moveTo(size.width * .67, size.height * .77);
-      path.relativeLineTo(0, -size.height * .22);
-
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
-
-    ///ALU to Mem Addr
-    {
-      Path path = Path();
-      path.moveTo(size.width * .67, size.height * .77);
-      path.relativeLineTo(0, -size.height * .19);
-      path.relativeLineTo(size.width * .1, 0);
-
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'ALU Result',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .22, size.height * .6));
-    }
-
-    ///op2 to data write
-    {
-      Path path = Path();
-      path.moveTo(size.width * .735, size.height * .69);
-      path.relativeLineTo(size.width * .035, 0);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'OP2',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .24, size.height * .69));
-    }
-
-    ///Read data to result select
-    {
-      Path path = Path();
-      path.moveTo(size.width * .9, size.height * .52);
-      path.relativeLineTo(0, -size.height*.04);
-      path.relativeLineTo(-size.width*.17, 0);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'Load Data',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .29, size.height * .44));
-    }
-
-    ///Branch Target Select to Adder
-    {
-      Path path = Path();
-      path.moveTo(size.width * .57, size.height * .335);
-      path.relativeLineTo(size.width*.11, 0);
-      path.relativeLineTo(0, -size.height*.125);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
-
-    ///PC to branch adder
-    {
-      Path path = Path();
-      path.moveTo(size.width * .76, size.height * .14);
-      path.relativeLineTo(-size.width * .04, 0);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'PC',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .244, size.height * .14));
-    }
-
-    ///PC+4 to result select
-    {
-      Path path = Path();
-      path.moveTo(size.width * .69, size.height * .365);
-      path.relativeLineTo(0, size.height * .06);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'PC+4',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .22, size.height * .37));
-    }
-
-    /// result select to rf
-    {
-      Path path = Path();
-      path.moveTo(size.width * .61, size.height * .47);
-      path.relativeLineTo(-size.width*.27, 0);
-      path.relativeLineTo(0, size.height*.065);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
-
-    /// immu to result select
-    {
-      Path path = Path();
-      path.moveTo(size.width * .66, size.height * .365);
-      path.relativeLineTo(0, size.height * .06);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'ImmU',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .13, size.height * .37));
-    }
-
-    ///OP2 Select to ALU
-    {
-      Path path = Path();
-      path.moveTo(size.width * .545, size.height * .82);
-      path.relativeLineTo(size.width * .09, 0);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'OP2',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(size.width * .09, size.height * .85));
-    }
-
-    ///RF to ALU
-    {
-      Path path = Path();
-      path.moveTo(size.width * .37, size.height * .59);
-      path.relativeLineTo(size.width * .28, 0);
-      path.relativeLineTo(0, size.height * .18);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'OP1',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .07, size.height * .6));
-    }
-
-    /// IM to rf rs1
-    {
-      Path path = Path();
-      path.moveTo(size.width * .145, size.height * .66);
-      path.relativeLineTo(0, -size.height * .08);
-      path.relativeLineTo(size.width * .1, 0);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'RS1',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .3, size.height * .55));
-    }
-
-    /// IM to rf rs2
-    {
-      Path path = Path();
-      path.moveTo(size.width * .185, size.height * .66);
-      path.relativeLineTo(0, -size.height * .05);
-      path.relativeLineTo(size.width * .06, 0);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'RS2',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .28, size.height * .62));
-    }
-
-    /// IM to Sign ext
-    {
-      Path path = Path();
-      path.moveTo(size.width * .21, size.height * .73);
-      path.relativeLineTo(size.width * .1, 0);
-      path.relativeLineTo(0, size.height * .07);
-
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-    }
-
-    ///RF to OP2 select
-    {
-      Path path = Path();
-      path.moveTo(size.width * .37, size.height * .64);
-      path.relativeLineTo(size.width * .1, 0);
-      path.relativeLineTo(0, size.height * .1);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'OP2',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .085, size.height * .64));
-    }
-
-    ///Sign ext to OP2 select Imm
-    {
-      Path path = Path();
-      path.moveTo(size.width * .36, size.height * .82);
-      path.relativeLineTo(size.width * .07, -size.height * .05);
-      path = ArrowPath.make(path: path);
-      canvas.drawPath(path, paint..color = Colors.black);
-      final TextSpan textSpan = TextSpan(
-        text: 'Imm',
-        style: TextStyle(color: Colors.black, fontSize: 16),
-      );
-      final TextPainter textPainter = TextPainter(
-        text: textSpan,
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout(minWidth: size.width);
-      textPainter.paint(canvas, Offset(-size.width * .11, size.height * .75));
-
-      ///Sign ext to OP2 select ImmS
-      {
-        Path path = Path();
-        path.moveTo(size.width * .36, size.height * .86);
-        path.relativeLineTo(size.width * .07, -size.height * .05);
-        path = ArrowPath.make(path: path);
-        canvas.drawPath(path, paint..color = Colors.black);
-        final TextSpan textSpan = TextSpan(
-          text: 'ImmS',
-          style: TextStyle(color: Colors.black, fontSize: 16),
-        );
-        final TextPainter textPainter = TextPainter(
-          text: textSpan,
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.ltr,
-        );
-        textPainter.layout(minWidth: size.width);
-        textPainter.paint(canvas, Offset(-size.width * .1, size.height * .85));
-      }
-
-      ///Sign ext to ImmB
-      {
-        Path path = Path();
-        path.moveTo(size.width * .29, size.height * .89);
-        path.relativeLineTo(0, size.height * .05);
-        path = ArrowPath.make(path: path);
-        canvas.drawPath(path, paint..color = Colors.black);
-        final TextSpan textSpan = TextSpan(
-          text: 'ImmB',
-          style: TextStyle(color: Colors.black, fontSize: 16),
-        );
-        final TextPainter textPainter = TextPainter(
-          text: textSpan,
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.ltr,
-        );
-        textPainter.layout(minWidth: size.width);
-        textPainter.paint(canvas, Offset(-size.width * .24, size.height * .89));
-      }
-
-      ///Sign ext to ImmJ
-      {
-        Path path = Path();
-        path.moveTo(size.width * .34, size.height * .89);
-        path.relativeLineTo(0, size.height * .05);
-        path = ArrowPath.make(path: path);
-        canvas.drawPath(path, paint..color = Colors.black);
-        final TextSpan textSpan = TextSpan(
-          text: 'ImmJ',
-          style: TextStyle(color: Colors.black, fontSize: 16),
-        );
-        final TextPainter textPainter = TextPainter(
-          text: textSpan,
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.ltr,
-        );
-        textPainter.layout(minWidth: size.width);
-        textPainter.paint(canvas, Offset(-size.width * .13, size.height * .89));
-      }
-
-      ///Branch target to ImmB
-      {
-        Path path = Path();
-        path.moveTo(size.width * .45, size.height * .26);
-        path.relativeLineTo(0, size.height * .05);
-        path = ArrowPath.make(path: path);
-        canvas.drawPath(path, paint..color = Colors.black);
-        final TextSpan textSpan = TextSpan(
-          text: 'ImmB',
-          style: TextStyle(color: Colors.black, fontSize: 16),
-        );
-        final TextPainter textPainter = TextPainter(
-          text: textSpan,
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.ltr,
-        );
-        textPainter.layout(minWidth: size.width);
-        textPainter.paint(canvas, Offset(-size.width * .08, size.height * .26));
-      }
-
-      ///Branchtarget to ImmJ
-      {
-        Path path = Path();
-        path.moveTo(size.width * .51, size.height * .26);
-        path.relativeLineTo(0, size.height * .05);
-        path = ArrowPath.make(path: path);
-        canvas.drawPath(path, paint..color = Colors.black);
-        final TextSpan textSpan = TextSpan(
-          text: 'ImmJ',
-          style: TextStyle(color: Colors.black, fontSize: 16),
-        );
-        final TextPainter textPainter = TextPainter(
-          text: textSpan,
-          textAlign: TextAlign.center,
-          textDirection: TextDirection.ltr,
-        );
-        textPainter.layout(minWidth: size.width);
-        textPainter.paint(canvas, Offset(size.width * .05, size.height * .26));
-      }
-    }
   }
 
   @override
   bool shouldRepaint(ArrowPainter oldDelegate) => false;
 }
+
+
+
+
+
 
 class Pipelined extends StatefulWidget {
   const Pipelined({Key? key}) : super(key: key);
@@ -1636,7 +1200,6 @@ class Pipelined extends StatefulWidget {
   @override
   State<Pipelined> createState() => _PipelinedState();
 }
-
 class _PipelinedState extends State<Pipelined> {
   void myFilePicker() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1645,7 +1208,6 @@ class _PipelinedState extends State<Pipelined> {
     );
     if (result == null) return;
     PlatformFile myFile = result.files.single;
-
   }
 
   @override
@@ -1688,31 +1250,49 @@ class _PipelinedState extends State<Pipelined> {
         child: Row(
           children: [
             Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Container(
                     width: 500,
-                    child:Row(
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: () {
-                            int a;
-                          },
+                          onPressed: () =>null,
+                          // {
+                          //   if (!outputRan &&
+                          //       displayStep < outputLines.length) {
+                          //     displayStep++;
+                          //     displayTxt += '${outputLines[displayStep]}\n\n';
+                          //     displayOutput();
+                          //   }
+                          // },
                           child: const Text('Step'),
                         ),
                         ElevatedButton(
-                            onPressed: () {
-                                int a;
-                            },
+                            onPressed: () =>null,
+                            // {
+                            //   if (!outputRan) {
+                            //     outputRan = true;
+                            //     displayTxt = outputTxt;
+                            //     if (myFile != null) {
+                            //       displayStep = outputReg.length - 1;
+                            //     }
+                            //     displayOutput();
+                            //   }
+                            // },
                             child: const Text('Run')),
                         ElevatedButton(
-                            onPressed: () {
-                              int a;
-                            },
+                            onPressed: () =>null,
+                            // {
+                            //   outputRan = false;
+                            //   displayTxt = '${outputLines[0]}\n\n';
+                            //   displayStep = 0;
+                            //   displayOutput();
+                            // },
                             child: const Text('Reset')),
                       ],
-                    )
-                ),
+                    )),
                 const SizedBox(
                   height: 10,
                 ),
@@ -1738,12 +1318,41 @@ class _PipelinedState extends State<Pipelined> {
                           ),
                         ),
                       ),
-                    )
-                )
+                    )),
+                const SizedBox(height: 5),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Register File",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            // if (myFile != null)
+                            //   displayRF(outputReg[displayStep].split('-')),
+                          ],
+                        ),
+                      ),
+                    ))
               ],
             ),
             const SizedBox(width: 15),
-            const ExecutionDiagram()
+            ExecutionDiagram(isPipelined: true,)
           ],
         ),
       ),
