@@ -992,7 +992,7 @@ class _SingleCycleState extends State<SingleCycle> {
               ],
             ),
             const SizedBox(width: 15),
-            ExecutionDiagram(isPipelined: false,)
+            ExecutionDiagram(isPipelined: false,updateDisplay: (int v){},)
           ],
         ),
       ),
@@ -1002,7 +1002,8 @@ class _SingleCycleState extends State<SingleCycle> {
 
 class ExecutionDiagram extends StatefulWidget {
   bool isPipelined=false;
-  ExecutionDiagram({Key? key,required this.isPipelined});
+  Function(int v)? updateDisplay;
+  ExecutionDiagram({Key? key,required this.isPipelined, required this.updateDisplay});
 
   @override
   State<ExecutionDiagram> createState() => _ExecutionDiagramState();
@@ -1074,11 +1075,11 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                 children: [
                   const SizedBox(width: 200,),
                   const SizedBox(height: 100,),
-                  createBox('Adder', 3, () {return null;}, 50, 50),
+                  createBox('Adder', 3, () {}, 50, 50),
                   const SizedBox(height: 120,),
-                  createBox('Sign\nExt.', 3, () { return null;}, 160, 70),
+                  createBox('Sign\nExt.', 3, () { }, 160, 70),
                   const SizedBox(height: 30,),
-                  createBox('Register\nFile', 0, () {return null;}, 150, 130),
+                  createBox('Register\nFile', 0, () {widget.updateDisplay!(0);}, 150, 130),
                 ],
               ),//Decode
               Column(
@@ -1118,18 +1119,17 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
             Row(
               children: [
                 const SizedBox(width: 180,),
-                createBox('Fetch-Decode', 5, () { }, 700, 10),
+                createBox('Fetch-Decode', 5, () {widget.updateDisplay!(1);}, 700, 10),
                 const SizedBox(width: 160,),
-                createBox('Decode-Execute', 5, () { }, 700, 10),
+                createBox('Decode-Execute', 5, () {widget.updateDisplay!(2);}, 700, 10),
                 const SizedBox(width: 140,),
-                createBox('Execute-Memory', 5, () { }, 700, 10),
+                createBox('Execute-Memory', 5, () {widget.updateDisplay!(3);}, 700, 10),
                 const SizedBox(width: 180,),
-                createBox('Memory-WriteBack', 5, () { }, 700, 10),
+                createBox('Memory-WriteBack', 5, () {widget.updateDisplay!(4);}, 700, 10),
               ],
             ),
-
-
-        ]),
+        ]
+        ),
       ),
     );
   }
@@ -1217,6 +1217,7 @@ class Pipelined extends StatefulWidget {
   State<Pipelined> createState() => _PipelinedState();
 }
 class _PipelinedState extends State<Pipelined> {
+  int whatDisplay=0;
   void myFilePicker() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -1351,8 +1352,8 @@ class _PipelinedState extends State<Pipelined> {
                         scrollDirection: Axis.vertical,
                         child: Column(
                           children: [
-                            const Text(
-                              "Register File",
+                             Text(
+                              whatDisplay.toString(),
                               style: TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 20),
                             ),
@@ -1368,7 +1369,7 @@ class _PipelinedState extends State<Pipelined> {
               ],
             ),
             const SizedBox(width: 15),
-            ExecutionDiagram(isPipelined: true,)
+            ExecutionDiagram(isPipelined: true,updateDisplay: (int v){whatDisplay=v;setState(() {});},)
           ],
         ),
       ),
