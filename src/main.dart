@@ -3,8 +3,6 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:path/path.dart';
 import 'package:arrow_path/arrow_path.dart';
-import "dart:async";
-import "dart:convert";
 
 void main() {
   runApp(
@@ -630,7 +628,7 @@ class _SingleCycleState extends State<SingleCycle> {
     }
     for (int i = 0; i < 32; i++) {
       if (i != 0) {
-        str += "-";
+        str += "\t";
       }
       str += RF[i].toString();
     }
@@ -796,13 +794,14 @@ class _SingleCycleState extends State<SingleCycle> {
     displayOutput();
   }
 
-  Widget displayRF(List<String> rf) {
+  displayRF(List<String> rf) {
     var RFlist = <Widget>[];
     for (int i = 0; i < 33; i+=11) {
       RFlist.add(Column(
-        //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
+          SizedBox(width: 150,),
           Container(
             height: 25,
             child: Text("x${i}: ${rf[i]}"),
@@ -986,7 +985,7 @@ class _SingleCycleState extends State<SingleCycle> {
                               height: 10,
                             ),
                             if (myFile != null)
-                              displayRF(outputReg[displayStep].split('-')),
+                              displayRF(outputReg[displayStep].split('\t')),
                           ],
                         ),
                       ),
@@ -1239,9 +1238,11 @@ class Pipelined extends StatefulWidget {
   State<Pipelined> createState() => _PipelinedState();
 }
 class _PipelinedState extends State<Pipelined> {
+  bool outputRan = false;
   int whatDisplay=0;
   solvePipelined solver = solvePipelined();
   int displayStep=0;
+  PlatformFile? myFile;
 
   void myFilePicker() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -1249,20 +1250,86 @@ class _PipelinedState extends State<Pipelined> {
       allowedExtensions: ['mc'],
     );
     if (result == null) return;
-    PlatformFile myFile = result.files.single;
+    myFile = result.files.single;
     String strPath =
-        '${Directory(myFile.path!).parent.path}\\${basenameWithoutExtension(myFile.path!)}_Pipelined.txt';
+        '${Directory(myFile!.path!).parent.path}\\${basenameWithoutExtension(myFile!.path!)}_Pipelined.txt';
     File outputFile = File(strPath);
-    File inputFile = File(myFile.name);
+    File inputFile = File(myFile!.name);
     solver.solve(inputFile, outputFile);
+    setState((){});
   }
 
-  String showDisplay(int a){
-    if(a==1){
-      return solver.IFDE[displayStep]??'Empty';
-    }else{
-      return whatDisplay.toString();
+  displayRF() {
+    List<String> rf=solver.outputReg[displayStep].split('\t');
+    var RFlist = <Widget>[];
+    for (int i = 0; i < 33; i+=11) {
+      RFlist.add(Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+          SizedBox(width: 150,),
+          Container(
+            height: 25,
+            child: Text("x${i}: ${rf[i]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 1}: ${rf[i + 1]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 2}: ${rf[i + 2]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 3}: ${rf[i + 3]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 4}: ${rf[i + 4]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 5}: ${rf[i + 5]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 6}: ${rf[i + 6]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 7}: ${rf[i + 7]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 8}: ${rf[i + 8]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 9}: ${rf[i + 9]}"),
+          ),
+          if(i!=22)
+            Container(
+              height: 25,
+              child: Text("x${i + 10}: ${rf[i + 10]}"),
+            ),
+        ],
+      ));
     }
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,crossAxisAlignment: CrossAxisAlignment.start,children: RFlist);
+  }
+
+  displayPR(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 400,),
+        SelectableText(solver.IFDE[displayStep]??'Empty'),
+        SelectableText(solver.DEEX[displayStep]??'Empty'),
+        SelectableText(solver.EXMA[displayStep]??'Empty'),
+        SelectableText(solver.MAWB[displayStep]??'Empty'),
+      ],
+    );
   }
 
   @override
@@ -1338,13 +1405,12 @@ class _PipelinedState extends State<Pipelined> {
                             // },
                             child: const Text('Run')),
                         ElevatedButton(
-                            onPressed: () =>null,
-                            // {
-                            //   outputRan = false;
-                            //   displayTxt = '${outputLines[0]}\n\n';
-                            //   displayStep = 0;
-                            //   displayOutput();
-                            // },
+                            onPressed: (){
+                              outputRan = false;
+                              // displayTxt = '${outputLines[0]}\n\n';
+                              displayStep = 0;
+                              setState((){});
+                            },
                             child: const Text('Reset')),
                       ],
                     )),
@@ -1391,15 +1457,15 @@ class _PipelinedState extends State<Pipelined> {
                         child: Column(
                           children: [
                             Text(
-                              showDisplay(whatDisplay),
+                              (whatDisplay==0)?'Register File':'Pipeline Registers',
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 20),
                             ),
                             const SizedBox(
                               height: 10,
                             ),
-                            // if (myFile != null)
-                            //   displayRF(outputReg[displayStep].split('-')),
+                            if (myFile != null)
+                              (whatDisplay==0)?displayRF():displayPR(),
                           ],
                         ),
                       ),
@@ -1427,10 +1493,16 @@ class BTB{
   }
 }
 class solvePipelined {
-  Map<int,String> IFDE={};/////////////////////////
+  Map<int,String> IFDE={};///////////////////////// re-initiate
+  Map<int,String> DEEX={};
+  Map<int,String> EXMA={};
+  Map<int,String> MAWB={};
+
+  List<String> outputReg = ['0${'\t0'*31}'];
+
   int pc = 0,count=0,btarget=0,instructCount=0,dataCount=0,controlCount=0,stallCount=0,dataHazard=0,controlHazard=0,misPredict=0,dataStalls=0,controlStalls=0;
   bool
-  knob1=true,
+      knob1=true,
       knob2=false,
       running=true,
       isBranchtaken=false,
@@ -2093,6 +2165,7 @@ class solvePipelined {
       execute();
       memory();
       write_back(f);
+
       // print("**************************");
       // print(pc);
       // print(if_de);
@@ -2102,7 +2175,12 @@ class solvePipelined {
       // print(RF);
       count++;
       transfer();
+      outputReg.add(RF.join('\t'));
       IFDE[count]=if_de.toString();
+      DEEX[count]=de_ex.toString();
+      EXMA[count]=ex_ma.toString();
+      MAWB[count]=ma_wb.toString();
+
       // print(count.toString()+if_de.toString());
     }
   }
