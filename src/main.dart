@@ -1676,7 +1676,7 @@ class _PipelinedState extends State<Pipelined> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.vertical,
                         child: SelectableText(
-                          solver.showTxt(displayStep),
+                            (displayStep==solver.count)?solver.displayTxt:solver.showTxt(displayStep),
                           textAlign: TextAlign.left,
                           style: const TextStyle(
                             color: Colors.black,
@@ -2662,7 +2662,9 @@ class solvePipelined {
 
     load_progmem();
     run_riscvsim(outputFile);
-    print(outputReg);
+    //print(outputReg);
+    print(displayTxt);
+
 
   }
 }
