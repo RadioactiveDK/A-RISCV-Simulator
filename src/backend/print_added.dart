@@ -1,6 +1,1497 @@
-import "dart:io";
-import "dart:async";
-import "dart:convert";
+import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'package:path/path.dart';
+import 'package:arrow_path/arrow_path.dart';
+
+void main() {
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'home screen',
+      home: MyHomeScreen(),
+    ),
+  );
+}
+
+class MyHomeScreen extends StatelessWidget {
+  const MyHomeScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        drawer: Drawer(
+          child: ListView(
+            children: [
+              const DrawerHeader(
+                decoration: BoxDecoration(
+                    color: Colors.blueAccent,
+                    borderRadius: BorderRadius.only(
+                      bottomRight: Radius.circular(10),
+                    )),
+                child: Text(
+                  'Execution\nType',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+              ),
+              ListTile(
+                title: const Text('Single Cycle'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SingleCycle(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                title: const Text('Pipelined'),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const Pipelined(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        appBar: AppBar(
+          title: const Text('RISCV-32I Simulator'),
+        ),
+        body: const HomeBody());
+  }
+}
+class HomeBody extends StatelessWidget {
+  const HomeBody({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: RichText(
+        text: const TextSpan(
+          text: 'Let\'s study ',
+          style: TextStyle(fontSize: 32, color: Colors.black54),
+          children: <TextSpan>[
+            TextSpan(
+                text: 'Computer Architecture!',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 64,
+                )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SingleCycle extends StatefulWidget {
+  const SingleCycle({Key? key}) : super(key: key);
+
+  @override
+  State<SingleCycle> createState() => _SingleCycleState();
+}
+class _SingleCycleState extends State<SingleCycle> {
+  String outputTxt = '', displayTxt = '', displayReg = '';
+  PlatformFile? myFile;
+  List<String> outputLines = [];
+  List<String> outputReg = [];
+  int clock = 0,
+      displayStep = 0,
+      aluresult = 0,
+      immediate = 0,
+      operand1 = 0,
+      operand2 = 0,
+      loadData = 0,
+      aluop = 0,
+      branchtarget = 0,
+      resultselect = 0,
+      rs1 = 0,
+      rs2 = 0,
+      rd = 0,
+      mcode = 0;
+  int type = 0, funct3 = 0, funct7 = 0, pc = 0;
+  bool outputRan = false,
+      Rfwrite = false,
+      Memop = false,
+      op2select = false,
+      isBranch = false,
+      running = true;
+  List n = [];
+  var RF = List<int>.filled(32, 0);
+  var b = List<int>.filled(32, 0);
+  var im = List<int>.filled(32, 0);
+  var t = List<int>.filled(32, 0);
+  Map<int, int> MEM = Map<int, int>();
+
+  void dec2bin(int value) {
+    if (value < 0) value = (1 << 32) + value;
+
+    for (int i = 0; i < 32; i++) {
+      t[i] = 0;
+    }
+
+    int i = 0;
+    while (value > 0 && i <= 31) {
+      t[i] = value % 2;
+      double next = value / 2;
+      value = next.toInt();
+      i++;
+    }
+  }
+
+  int comp2() {
+    int c = t[31];
+    if (c == 1) {
+      for (int i = 0; i <= 31; i++) {
+        if (t[i] == 1)
+          t[i] = 0;
+        else
+          t[i] = 1;
+      }
+      int i = 0;
+      while (i <= 31 && t[i] == 1) {
+        t[i] = 0;
+        i++;
+      }
+      if (i <= 31) {
+        t[i] = 1;
+      }
+    }
+    int sum = 0;
+    for (int i = 31; i >= 0; i--) {
+      sum = (2 * sum) + t[i];
+    }
+    if (c == 1) {
+      sum = (-1) * sum;
+    }
+    return sum;
+  }
+
+  void lw(int Eaddress) {
+    loadData = MEM[Eaddress] ?? 0;
+  }
+
+  void lb(int Eaddress, int index) {
+    int element = MEM[Eaddress] ?? 0;
+    loadData = ((element >> (8 * index)) & 0xFF);
+    for (int i = 0; i <= 7; i++) {
+      t[i] = (loadData >> i) & 1;
+    }
+    for (int i = 8; i <= 31; i++) {
+      t[i] = t[7];
+    }
+    loadData = comp2();
+  }
+
+  void lh(int Eaddress, int index) {
+    int element = MEM[Eaddress] ?? 0;
+    loadData = ((element >> (8 * index)) & 0xFFFF);
+    for (int i = 0; i <= 15; i++) {
+      t[i] = (loadData >> i) & 1;
+    }
+    for (int i = 16; i <= 31; i++) {
+      t[i] = t[15];
+    }
+    loadData = comp2();
+  }
+
+  void sb(int Eaddress, int index) {
+    int element = MEM[Eaddress] ?? 0;
+    for (int i = 0; i <= 31; i++) {
+      t[i] = (element >> i) & 1;
+    }
+    index = 8 * index;
+    for (int i = 0; i <= 7; i++) {
+      t[index] = (operand2 >> i) & 1;
+      index = index + 1;
+    }
+    MEM[Eaddress] = comp2();
+  }
+
+  void sh(int Eaddress, int index) {
+    int element = MEM[Eaddress] ?? 0;
+    for (int i = 0; i <= 31; i++) {
+      t[i] = (element >> i) & 1;
+    }
+    index = 8 * index;
+    for (int i = 0; i <= 15; i++) {
+      t[index] = (operand2 >> i) & 1;
+      index = index + 1;
+    }
+    MEM[Eaddress] = comp2();
+  }
+
+  void sw(int Eaddress) {
+    MEM[Eaddress] = operand2;
+  }
+
+  void fetch(File f) {
+    int mcode = MEM[pc] ?? 0;
+    if (mcode == 0 || mcode == 1) {
+      swi_exit(f);
+    } else {
+      dec2bin(mcode);
+      for (int i = 0; i < 32; i++) {
+        b[i] = t[i];
+      }
+    }
+    int instr = MEM[pc] ?? 0;
+    if (instr < 0) {
+      instr += (1 << 32);
+    }
+    outputTxt +=
+    'FETCH: Read instruction 0x${'0' * (8 - instr.toRadixString(16).length)}${instr.toRadixString(16)} from address 0x${pc.toRadixString(16)}.\n';
+  }
+
+  void decode() {
+    //finding opcode,funct7,funct3,rs1,rs2,rs
+    for (int i = 6; i >= 0; i--) {
+      type = (2 * type) + b[i];
+    }
+    for (int i = 14; i >= 12; i--) {
+      funct3 = (2 * funct3) + b[i];
+    }
+    for (int i = 31; i >= 25; i--) {
+      funct7 = (2 * funct7 + b[i]);
+    }
+    for (int i = 19; i >= 15; i--) {
+      rs1 = (2 * rs1 + b[i]);
+    }
+    for (int i = 24; i >= 20; i--) {
+      rs2 = (2 * rs2 + b[i]);
+    }
+    for (int i = 11; i >= 7; i--) {
+      rd = (2 * rd + b[i]);
+    }
+    //immediate bits list
+    for (int i = 0; i <= 31; i++) {
+      im[i] = 0;
+    }
+
+    ///i type
+    if (type == 19 || type == 3 || type == 103) {
+      for (int i = 20; i <= 31; i++) {
+        im[i - 20] = b[i];
+      }
+      for (int i = 12; i <= 31; i++) {
+        im[i] = im[11];
+      }
+    }
+
+    ///j type
+    else if (type == 111) {
+      for (int i = 12; i <= 19; i++) {
+        im[i] = b[i];
+      }
+      im[11] = b[20];
+      im[20] = b[31];
+      for (int i = 21; i <= 30; i++) {
+        im[i - 20] = b[i];
+      }
+      for (int i = 21; i <= 31; i++) {
+        im[i] = im[20];
+      }
+    }
+    //u type
+    else if (type == 55 || type == 23) {
+      for (int i = 12; i <= 31; i++) {
+        im[i] = b[i];
+      }
+    }
+
+    ///b type
+    else if (type == 99) {
+      im[11] = b[7];
+      im[12] = b[31];
+      for (int i = 8; i <= 11; i++) {
+        im[i - 7] = b[i];
+      }
+      for (int i = 25; i <= 30; i++) {
+        im[i - 20] = b[i];
+      }
+      for (int i = 13; i <= 31; i++) {
+        im[i] = im[12];
+      }
+    }
+    //s type
+    else if (type == 35) {
+      for (int i = 7; i <= 11; i++) {
+        im[i - 7] = b[i];
+      }
+      for (int i = 25; i <= 30; i++) {
+        im[i - 20] = b[i];
+      }
+      for (int i = 12; i <= 31; i++) {
+        im[i] = im[11];
+      }
+    }
+//Rfwrite
+    if (type != 99 && type != 35) {
+      Rfwrite = true;
+    }
+//resultselect
+    if (type == 3)
+      resultselect = 1; //load mode
+    else if (type == 111 || type == 103)
+      resultselect = 2; //jal|jalr pc+4
+    else if (type == 23)
+      resultselect = 3;
+    else if (type == 55) resultselect = 4;
+
+//op2select
+    if (type == 19 || type == 3 || type == 35) op2select = true;
+//MEmop
+    if (type == 35) Memop = true;
+//ALUOP
+    if (type == 99 || (type == 51 && funct3 == 0 && funct7 == 32)) {
+      aluop = 1;
+    } //sub
+    else if (funct3 == 7 && (type == 51 || type == 19))
+      aluop = 2; //and
+    else if (funct3 == 6 && (type == 51 || type == 19))
+      aluop = 3; //or
+    else if (type == 51 && funct3 == 4) aluop = 4; //xor
+    if (type == 51) {
+      if (funct3 == 1)
+        aluop = 5; //sll
+      else if (funct3 == 5 && funct7 == 32)
+        aluop = 7; //sra
+      else if (funct3 == 5 && funct7 == 0)
+        aluop = 6; //srl
+      else if (funct3 == 2) aluop = 8;
+    }
+//immediate sign extension
+    for (int i = 0; i < 32; i++) {
+      t[i] = im[i];
+    }
+    immediate = comp2();
+//registers
+    operand1 = RF[rs1];
+    operand2 = RF[rs2];
+    //message
+    outputTxt += "DECODE: Operation is ";
+    if (type == 51) {
+      if (funct3 == 0) {
+        if (funct7 == 0) {
+          outputTxt += "ADD, ";
+        } else
+          outputTxt += "SUB, ";
+      } else if (funct3 == 7)
+        outputTxt += "AND, ";
+      else if (funct3 == 6)
+        outputTxt += "OR, ";
+      else if (funct3 == 4)
+        outputTxt += "XOR, ";
+      else if (funct3 == 1)
+        outputTxt += "SLL, ";
+      else if (funct3 == 2)
+        outputTxt += "SLT, ";
+      else if (funct3 == 5) {
+        if (funct7 == 0) {
+          outputTxt += "SRL, ";
+        } else
+          outputTxt += "SRA, ";
+      }
+      outputTxt +=
+      "rs1 is x${rs1}, rs2 is x${rs2} and destination register is x${rd}.\n";
+    } else if (type == 19) {
+      if (funct3 == 0) {
+        outputTxt += "ADDI, ";
+      } else if (funct3 == 6) {
+        outputTxt += "ORI, ";
+      } else if (funct3 == 7) {
+        outputTxt += "ANDI, ";
+      }
+      outputTxt +=
+      "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+    } else if (type == 3) {
+      if (funct3 == 0) {
+        outputTxt += "LB, ";
+      } else if (funct3 == 1) {
+        outputTxt += "LH, ";
+      } else if (funct3 == 2) {
+        outputTxt += "LW, ";
+      }
+      outputTxt +=
+      "rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+    } else if (type == 103) {
+      outputTxt +=
+      "JALR, rs1 is x${rs1}, immediate is ${immediate} and destination register is x${rd}.\n";
+    } else if (type == 35) {
+      if (funct3 == 0) {
+        outputTxt += "SB, ";
+      } else if (funct3 == 1) {
+        outputTxt += "SH, ";
+      } else if (funct3 == 2) {
+        outputTxt += "SW, ";
+      }
+      outputTxt +=
+      "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+    } else if (type == 99) {
+      if (funct3 == 0) {
+        outputTxt += "BEQ, ";
+      } else if (funct3 == 1) {
+        outputTxt += "BNE, ";
+      } else if (funct3 == 4) {
+        outputTxt += "BLT, ";
+      } else if (funct3 == 5) {
+        outputTxt += "BGE, ";
+      }
+      outputTxt +=
+      "rs1 is x${rs1}, immediate is ${immediate} and rs2 is x${rs2}.\n";
+    } else if (type == 111) {
+      outputTxt += "JAL, immediate is ${immediate} and rd is x${rd}.\n";
+    } else if (type == 55) {
+      outputTxt += "LUI, immediate is ${immediate} and rd is x${rd}.\n";
+    } else if (type == 23) {
+      outputTxt += "AUIPC, immediate is ${immediate} and rd is x${rd}.\n";
+    }
+  }
+
+  void execute() {
+    int temp = operand2;
+    outputTxt += "EXECUTE: ";
+    if (op2select == true) temp = immediate;
+    switch (aluop) {
+      case 0:
+        {
+          outputTxt += "ADD ${operand1} and ${temp}.\n";
+          aluresult = temp + operand1;
+          if (aluresult > 2147483647) {
+            aluresult = -2147483648 + (aluresult - 2147483648);
+          } else if (aluresult < -2147483648) {
+            aluresult = 2147483647 + (2147483649 + aluresult);
+          }
+        }
+        break;
+
+      case 1:
+        {
+          outputTxt += "SUBTRACT ${temp} from ${operand1}.\n";
+          aluresult = operand1 - temp;
+          if (aluresult > 2147483647) {
+            aluresult = -2147483648 + (aluresult - 2147483648);
+          } else if (aluresult < -2147483648) {
+            aluresult = 2147483647 + (2147483649 + aluresult);
+          }
+        }
+        break;
+
+      case 2:
+        {
+          outputTxt += "LOGICAL 'AND' of ${operand1} and ${temp}.\n";
+          aluresult = operand1 & temp;
+        }
+        break;
+
+      case 3:
+        {
+          outputTxt += "LOGICAL 'OR' of ${operand1} and ${temp}.\n";
+          aluresult = operand1 | temp;
+        }
+        break;
+
+      case 4:
+        {
+          outputTxt += "LOGICAL 'XOR' of ${operand1} and ${temp}.\n";
+          aluresult = operand1 ^ temp;
+        }
+        break;
+
+      case 5:
+        {
+          outputTxt += "SHIFT left ${operand1} ${temp} times.\n";
+          aluresult = operand1;
+          for (int i = 0; i < temp; i++) {
+            aluresult = aluresult << 1;
+            if (aluresult > 2147483647) {
+              aluresult = -2147483648 + (aluresult - 2147483648);
+            } else if (aluresult < -2147483648) {
+              aluresult = 2147483647 + (2147483649 + aluresult);
+            }
+          }
+        }
+        break;
+    //list use for srl
+      case 6:
+        {
+          outputTxt += "LOGICAL SHIFT right ${operand1} ${temp} times.\n";
+          dec2bin(operand1);
+          int i = 0;
+          for (; i <= 31 - temp && i <= 31; i++) {
+            t[i] = t[i + temp];
+          }
+          while (i <= 31) {
+            t[i] = 0;
+            i++;
+          }
+          aluresult = comp2();
+        }
+        break;
+
+      case 7:
+        {
+          outputTxt += "ARITHMETIC SHIFT right ${operand1} ${temp} times.\n";
+          aluresult = operand1 >> temp;
+        }
+        break;
+
+      case 8:
+        {
+          outputTxt += "SET less than ${operand1} ${temp} times.\n";
+          if (operand1 < temp)
+            aluresult = 1;
+          else
+            aluresult = 0;
+        }
+        break;
+    }
+    //branch
+    if (type == 99 || type == 111)
+      branchtarget = pc + immediate;
+    else if (type == 103) branchtarget = aluresult;
+    if (type == 111 || type == 103)
+      isBranch = true;
+    else if (type == 99) {
+      if (funct3 == 0 && operand1 == operand2)
+        isBranch = true;
+      else if (funct3 == 1 && operand1 != temp)
+        isBranch = true;
+      else if (funct3 == 4 && operand1 < temp)
+        isBranch = true;
+      else if (funct3 == 5 && operand1 >= temp) isBranch = true;
+    }
+  }
+
+  void memory() {
+    int Eaddress = aluresult - (aluresult % 4);
+    int index = aluresult % 4;
+    outputTxt += "MEMORY: ";
+    for (int i = 0; i < 32; i++) {
+      t[i] = 0;
+    }
+    if (Memop == false) {
+      if (type == 3) {
+        outputTxt += "Load from address 0x${aluresult.toRadixString(16)}.\n";
+      } else
+        outputTxt += "No memory operation.\n";
+
+      if (funct3 == 0) {
+        lb(Eaddress, index);
+      } else if (funct3 == 1) {
+        lh(Eaddress, index);
+      } else if (funct3 == 2) {
+        lw(Eaddress);
+      }
+    } else {
+      outputTxt += "Store at address 0x${aluresult.toRadixString(16)}.\n";
+
+      if (funct3 == 0) {
+        sb(Eaddress, index);
+      } else if (funct3 == 1) {
+        sh(Eaddress, index);
+      } else if (funct3 == 2) {
+        sw(Eaddress);
+      }
+    }
+  }
+
+  void write_back() {
+    outputTxt += "WRITEBACK: ";
+
+    int word = aluresult;
+    if (Rfwrite == true) {
+      outputTxt += "Write to x${rd}. ";
+
+      if (resultselect == 1)
+        word = loadData;
+      else if (resultselect == 2)
+        word = pc + 4;
+      else if (resultselect == 3)
+        word = pc + immediate;
+      else if (resultselect == 4) word = immediate;
+
+      if (rd != 0)
+        RF[rd] = word;
+      else
+        RF[0] = 0;
+    }
+    var str = "\n\n";
+    if (displayReg == '') {
+      str = '';
+    }
+    for (int i = 0; i < 32; i++) {
+      if (i != 0) {
+        str += "\t";
+      }
+      str += RF[i].toString();
+    }
+    displayReg += str;
+
+    if (isBranch == true) {
+      pc = branchtarget;
+    } else
+      pc = pc + 4;
+
+    outputTxt += "PC is updated to 0x${pc.toRadixString(16)}.\n";
+  }
+
+  void reset_proc() {
+    aluresult = 0;
+    immediate = 0;
+    operand1 = 0;
+    operand2 = 0;
+    loadData = 0;
+    aluop = 0;
+    branchtarget = 0;
+    resultselect = 0;
+    rs1 = 0;
+    rs2 = 0;
+    rd = 0;
+    type = 0;
+    funct3 = 0;
+    funct7 = 0;
+    Rfwrite = false;
+    Memop = false;
+    op2select = false;
+    isBranch = false;
+    for (int i = 0; i <= 31; i++) {
+      b[i] = 0;
+      im[i] = 0;
+      t[i] = 0;
+    }
+  }
+
+  void swi_exit(File f) {
+    write_datamemory(f);
+    running = false;
+  }
+
+  void write_datamemory(File myOutFile) {
+    myOutFile.writeAsStringSync("ADDRESS\t\t\t\tDATA\n\n",
+        mode: FileMode.append);
+    for (var i in MEM.keys) {
+      String adress = i.toRadixString(16);
+      int val = MEM[i] ?? 0;
+      if (val < 0) {
+        val = (1 << 32) + val;
+      }
+      adress = "0x${'0' * (8 - adress.length)}$adress\t\t\t0x${'0' * (8 - val.toRadixString(16).length)}${val.toRadixString(16)}\n";
+      myOutFile.writeAsStringSync(adress, mode: FileMode.append);
+    }
+  }
+
+  void runRiscvSim(File f) {
+    f.writeAsStringSync("",
+        mode: FileMode.write);
+    pc = 0;
+    clock = 0;
+    displayStep = 0;
+    while (running) {
+      fetch(f);
+      decode();
+      execute();
+      memory();
+      write_back();
+      reset_proc();
+      clock++;
+      outputTxt += 'CLOCK CYCLES ELAPSED = $clock\n\n';
+    }
+    outputLines = outputTxt.split('\n\n');
+    outputReg = displayReg.split('\n\n');
+    print(outputReg);
+  }
+
+  void load_progmem() {
+    for (int i = 0; i < n.length; i++) {
+      String s = n[i];
+      int address = 0, instruct = 0;
+      int j = 0;
+      while (j < s.length && s.codeUnitAt(j) != 120) {
+        j++;
+      }
+      j++;
+      while (j < s.length) {
+        int asc = s.codeUnitAt(j);
+        if (asc == 32)
+          break;
+        else {
+          if (asc >= 65)
+            asc = asc - 55;
+          else
+            asc = asc - 48;
+        }
+        address = 16 * (address) + asc;
+        j++;
+      }
+      while (j < s.length && s.codeUnitAt(j) != 120) {
+        j++;
+      }
+      j++;
+      while (j < s.length) {
+        int asc = s.codeUnitAt(j);
+        if (asc == 32)
+          break;
+        else {
+          if (asc >= 65)
+            asc = asc - 55;
+          else
+            asc = asc - 48;
+        }
+        instruct = 16 * (instruct) + asc;
+        j++;
+      }
+      dec2bin(instruct);
+      instruct = comp2();
+      dec2bin(address);
+      address = comp2();
+      MEM[address] = instruct;
+    }
+  }
+
+  void singleCycleCode(PlatformFile inputFile) async {
+    // print(Directory(inputFile.path!).parent.path);
+    // print(basenameWithoutExtension(inputFile.path!));
+    String strPath =
+        '${Directory(inputFile.path!).parent.path}\\${basenameWithoutExtension(inputFile.path!)}_SingleCycle.txt';
+    // print(strPath);
+    File outputFile = File(strPath);
+
+    File file = File(inputFile.name);
+    List<String> s = file.readAsLinesSync();
+    for (int i = 0; i < s.length; i++) {
+      n.add(s[i]);
+    }
+    reset_proc();
+    running = true;
+    outputRan = false;
+    RF[2] = 2147483644;
+    load_progmem();
+    runRiscvSim(outputFile);
+  }
+
+  void displayOutput() {
+    setState(() {});
+  }
+
+  void myFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mc'],
+    );
+    if (result == null) return;
+    myFile = result.files.single;
+    outputTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
+    displayTxt = 'CLOCK CYCLES ELAPSED = 0\n\n';
+
+    singleCycleCode(myFile!);
+    displayOutput();
+  }
+
+  displayRF(List<String> rf) {
+    var RFlist = <Widget>[];
+    for (int i = 0; i < 33; i+=11) {
+      RFlist.add(Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+          SizedBox(width: 150,),
+          Container(
+            height: 25,
+            child: Text("x${i}: ${rf[i]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 1}: ${rf[i + 1]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 2}: ${rf[i + 2]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 3}: ${rf[i + 3]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 4}: ${rf[i + 4]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 5}: ${rf[i + 5]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 6}: ${rf[i + 6]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 7}: ${rf[i + 7]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 8}: ${rf[i + 8]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 9}: ${rf[i + 9]}"),
+          ),
+          if(i!=22)
+            Container(
+              height: 25,
+              child: Text("x${i + 10}: ${rf[i + 10]}"),
+            ),
+        ],
+      ));
+    }
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,crossAxisAlignment: CrossAxisAlignment.start,children: RFlist);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    //print(displayReg);
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: const Text('Single Cycle Execution'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.file_open),
+            tooltip: 'Select .mc file',
+            onPressed: () {
+              myFilePicker();
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('Information'),
+                  content: const Text(
+                      'If a file is selected, the output file will be created in the same directory.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'OK'),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(
+                    width: 500,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            if (!outputRan &&
+                                displayStep < outputLines.length) {
+                              displayStep++;
+                              displayTxt += '${outputLines[displayStep]}\n\n';
+                              displayOutput();
+                            }
+                          },
+                          child: const Text('Step'),
+                        ),
+                        ElevatedButton(
+                            onPressed: () {
+                              if (!outputRan) {
+                                outputRan = true;
+                                displayTxt = outputTxt;
+                                if (myFile != null) {
+                                  displayStep = outputReg.length - 1;
+                                }
+                                displayOutput();
+                              }
+                            },
+                            child: const Text('Run')),
+                        ElevatedButton(
+                            onPressed: () {
+                              outputRan = false;
+                              displayTxt = '${outputLines[0]}\n\n';
+                              displayStep = 0;
+                              displayOutput();
+                            },
+                            child: const Text('Reset')),
+                      ],
+                    )),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SelectableText(
+                          displayTxt,
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                      ),
+                    )),
+                const SizedBox(height: 5),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: [
+                            const Text(
+                              "Register File",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            if (myFile != null)
+                              displayRF(outputReg[displayStep].split('\t')),
+                          ],
+                        ),
+                      ),
+                    ))
+              ],
+            ),
+            const SizedBox(width: 15),
+            ExecutionDiagram(isPipelined: false,updateDisplay: (int v){},)
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ExecutionDiagram extends StatefulWidget {
+  bool? isPipelined;
+  Function(int v)? updateDisplay;
+  ExecutionDiagram({Key? key,required this.isPipelined, required this.updateDisplay});
+
+  @override
+  State<ExecutionDiagram> createState() => _ExecutionDiagramState();
+}
+class _ExecutionDiagramState extends State<ExecutionDiagram> {
+  final ScrollController _mycontroller = new ScrollController();
+  chooseColor(int type){
+    if(type==5) return Colors.black38;
+    if(type==3) return Colors.blueGrey;
+    if(type==0) return Colors.pinkAccent;
+    if(type==2) return Colors.blueAccent;
+    return Colors.deepPurpleAccent;
+
+  }
+  createBox(String text,int type, VoidCallback func, double height, double width){
+    return ElevatedButton(
+        onPressed: func,
+        style: ElevatedButton.styleFrom(primary:chooseColor(type),minimumSize: Size(width, height)),
+        child: Container(
+          alignment: Alignment.center,
+          child: (type==5)?RotatedBox(
+            quarterTurns: -1,
+            child: Text(text,style: const TextStyle(fontSize: 10,color: Colors.white),),
+          ):Text(text,textAlign: TextAlign.center,),
+        )
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      controller: _mycontroller,
+      child: Container(
+        width: 1000,
+        height: 700,
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+            color: Colors.cyan[200],
+            borderRadius: const BorderRadius.all(Radius.circular(10.0))),
+        child: Stack(children: <Widget>[
+          if(widget.isPipelined!)
+            Row(
+              children: [
+                Container(height: 700,width: 200,child: const Text('Fetch',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
+                Container(height: 700,width: 200,child: const Text('Decode',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
+                Container(height: 700,width: 200,child: const Text('Execute',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
+                Container(height: 700,width: 200,child: const Text('Memory',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
+                Container(height: 700,width: 180,child: const Text('Write-\nBack',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),)
+              ],
+            ),
+          ClipRect(
+            child: CustomPaint(
+              size: const Size(1000, 800),
+              painter: ArrowPainter(),
+            ),
+          ),
+          Row(
+            //mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 50,),
+                  createBox('IsBranch\nMux', 2, () {return null;}, 100, 70),
+                  const SizedBox(height: 70,),
+                  createBox('PC', 1, () {return null;}, 50, 80), // PC
+                  const SizedBox(height: 100,),
+                  createBox('Instruction\nMemory', 0, () {return null;}, 180, 130),
+                ],
+              ),//Fetch
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 100,),
+                  createBox('Adder', 3, () {}, 50, 50),
+                  const SizedBox(height: 120,),
+                  createBox('Sign\nExt.', 1, () { }, 160, 70),
+                  const SizedBox(height: 30,),
+                  createBox('Register\nFile', 0, () {widget.updateDisplay!(0);}, 150, 130),
+                ],
+              ),//Decode
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 60,),
+                  createBox('Adder', 3, () {}, 70, 70),
+                  const SizedBox(height: 40,),
+                  createBox('Branch Target\nSelect Mux', 2, () {}, 100, 100),
+                  const SizedBox(height: 100,),
+                  createBox('OP2\nSelect\nMux', 2, () { }, 100, 70),
+                  const SizedBox(height: 70,),
+                  createBox('ALU', 1, () { }, 120, 120),
+
+                ],
+              ),//Execute
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 200,),
+                  const SizedBox(height: 400,),
+                  createBox('DATA\nMEMORY', 0, () { }, 160, 170),
+                ],
+              ),//Memory
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  const SizedBox(width: 180,),
+                  const SizedBox(height: 300,),
+                  createBox('Result\nSelect\nMux', 2, () { }, 200, 70),
+                ],
+              ),//Writeback
+            ],
+          ),
+          if(widget.isPipelined!)
+            Row(
+              children: [
+                const SizedBox(width: 180,),
+                createBox('                     Fetch-Decode', 5, () {widget.updateDisplay!(1);}, 700, 10),
+                const SizedBox(width: 160,),
+                createBox('                                                                                                Decode-Execute', 5, () {widget.updateDisplay!(2);}, 700, 10),
+                const SizedBox(width: 140,),
+                createBox('Execute-Memory                                                                                                ', 5, () {widget.updateDisplay!(3);}, 700, 10),
+                const SizedBox(width: 180,),
+                createBox('                                                                                 Memory-WriteBack', 5, () {widget.updateDisplay!(4);}, 700, 10),
+              ],
+            ),
+        ]
+        ),
+      ),
+    );
+  }
+}
+class ArrowPainter extends CustomPainter {
+  createArrow(double x1,double y1,double x2,double y2,double x3,double y3,double x4,double y4,Canvas canvas,Paint paint){
+    Path path = Path();
+    path.moveTo(x1, y1);
+    path.relativeLineTo(x2,y2);
+    path.relativeLineTo(x3,y3);
+    path.relativeLineTo(x4,y4);
+    path = ArrowPath.make(path: path);
+    canvas.drawPath(path, paint);
+  }
+  createText(Canvas canvas,Paint paint,String txt,double size,double x,double y){
+    final TextSpan textSpan = TextSpan(
+      text: txt,
+      style: TextStyle(color: Colors.black, fontSize: size),
+    );
+    final TextPainter textPainter = TextPainter(
+      text: textSpan,
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(x,y));
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint()
+      ..color = Colors.black
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = 3.0;
+
+    ///Arrows
+    createArrow(100, 140, 0, 70, 0, 0, 0, 0, canvas, paint);//Isbranch to pc
+    createArrow(100, 250, 0, 100, 0, 0, 0, 0, canvas, paint);//pc to IM
+    createArrow(100, 245, 190, 0, 0, -95, 0, 0, canvas, paint);//pc to adder
+    createArrow(320, 245, 0, -95, 0, 0, 0, 0, canvas, paint);//4 to adder
+    createArrow(305, 125, -160, 0, 0, 0, 0, 0, canvas, paint);//adder to isbranch
+    createArrow(500, 95, -355, 0, 0, 0, 0, 0, canvas, paint); //Branch Target Address Arrow
+    createArrow(300, 65, -155, 0, 0, 0, 0, 0, canvas, paint);//ALU result to IsBranch Arrow
+    createArrow(500, 600, 200, 0, 0, -40, 0, 0, canvas, paint);//ALU to memory
+    createArrow(700, 600, 110, 0, 0, -140, 40, 0, canvas, paint);//ALU to ResultSelect
+    createArrow(500, 410, 115, 0, 0, 0, 0, 0, canvas, paint);//op2select to mem
+    createArrow(700, 430, 150, 0, 0, 0, 0, 0, canvas, paint);//mem to result select
+    createArrow(600, 75, -60, 0, 0, 0, 0, 0, canvas, paint);//pc to branch adder
+    createArrow(500, 200, 100, 0, 0, -100, -60, 0, canvas, paint);// branch target to adder
+    createArrow(780, 370, 70, 0, 0, 0, 0, 0, canvas, paint);// pc r select
+    createArrow(300, 330, 550, 0, 0, 0, 0, 0, canvas, paint);// immu "
+    createArrow(890, 490, 0, 160, -580, 0, 0, -60, canvas, paint);    // result select to rf
+    createArrow(500, 445, 0, 70, 0, 0, 0, 0, canvas, paint);    //OP2 Select to ALU
+    createArrow(300, 550, 140, 0, 0, 0, 0, 0, canvas, paint); //RF to ALU
+    createArrow(100, 460, 135, 0, 0, 0, 0, 0, canvas, paint); // rs1 to rf
+    createArrow(100, 490, 135, 0, 0, 0, 0, 0, canvas, paint); // rs1 to rf
+    createArrow(100, 380, 165, 0, 0, 0, 0, 0, canvas, paint); // IM to sign ext
+    createArrow(300, 500, 100, 0, 0, -70, 60, 0, canvas, paint); //RF to op2select
+    createArrow(300, 370, 160, 0, 0, 0, 0, 0, canvas, paint); //sign ext to op2sel
+    createArrow(300, 400, 160, 0, 0, 0, 0, 0, canvas, paint); //sign ext to op2sel
+    createArrow(300, 300, 180, 0, 0, -40, 0, 0, canvas, paint);//sign ext to branch select
+    createArrow(300, 315, 220, 0, 0, -55, 0, 0, canvas, paint);//sign ext to branch select
+
+    ///Text
+    createText(canvas, paint, '4', 20, 330, 190);
+    createText(canvas, paint, 'RS1', 16, 180, 440);
+    createText(canvas, paint, 'RS2', 16, 180, 470);
+    createText(canvas, paint, 'Imm', 16, 360, 345);
+    createText(canvas, paint, 'ImmS', 16, 360, 375);
+    createText(canvas, paint, 'OP1', 16, 380, 525);
+    createText(canvas, paint, 'OP2', 16, 365, 480);
+    createText(canvas, paint, 'ImmJ', 16, 430, 270);
+    createText(canvas, paint, 'ImmB', 16, 530, 270);
+    createText(canvas, paint, 'ImmU', 16, 790, 310);
+    createText(canvas, paint, 'PC+4', 16, 790, 350);
+    createText(canvas, paint, 'Load\nData', 15, 800, 390);
+    createText(canvas, paint, 'ALU Result', 16, 720, 570);
+    createText(canvas, paint, 'PC', 16, 570, 50);
+    createText(canvas, paint, 'ALU Result', 16, 200, 40);
+    createText(canvas, paint, 'Branch Target Address', 16, 200, 70);
+
+  }
+
+  @override
+  bool shouldRepaint(ArrowPainter oldDelegate) => false;
+}
+
+
+
+
+
+class Pipelined extends StatefulWidget {
+  const Pipelined({Key? key}) : super(key: key);
+
+  @override
+  State<Pipelined> createState() => _PipelinedState();
+}
+class _PipelinedState extends State<Pipelined> {
+  bool outputRan = false;
+  int whatDisplay=0;
+  solvePipelined solver = solvePipelined();
+  int displayStep=0;
+  PlatformFile? myFile;
+
+  void myFilePicker() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['mc'],
+    );
+    if (result == null) return;
+    myFile = result.files.single;
+    String strPath =
+        '${Directory(myFile!.path!).parent.path}\\${basenameWithoutExtension(myFile!.path!)}_Pipelined.txt';
+    File outputFile = File(strPath);
+    File inputFile = File(myFile!.name);
+    solver.solve(inputFile, outputFile);
+    setState((){});
+  }
+
+  displayRF() {
+    List<String> rf=solver.outputReg[displayStep].split('\t');
+    var RFlist = <Widget>[];
+    for (int i = 0; i < 33; i+=11) {
+      RFlist.add(Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+
+        children: [
+          SizedBox(width: 150,),
+          Container(
+            height: 25,
+            child: Text("x${i}: ${rf[i]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 1}: ${rf[i + 1]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 2}: ${rf[i + 2]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 3}: ${rf[i + 3]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 4}: ${rf[i + 4]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 5}: ${rf[i + 5]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 6}: ${rf[i + 6]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 7}: ${rf[i + 7]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 8}: ${rf[i + 8]}"),
+          ),
+          Container(
+            height: 25,
+            child: Text("x${i + 9}: ${rf[i + 9]}"),
+          ),
+          if(i!=22)
+            Container(
+              height: 25,
+              child: Text("x${i + 10}: ${rf[i + 10]}"),
+            ),
+        ],
+      ));
+    }
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly,crossAxisAlignment: CrossAxisAlignment.start,children: RFlist);
+  }
+
+  displayPR(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 400,),
+        SelectableText(solver.IFDE[displayStep]??'Empty'),
+        SelectableText(solver.DEEX[displayStep]??'Empty'),
+        SelectableText(solver.EXMA[displayStep]??'Empty'),
+        SelectableText(solver.MAWB[displayStep]??'Empty'),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        leading: BackButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        title: const Text('Pipelined Execution'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.file_open),
+            tooltip: 'Select .mc file',
+            onPressed: () {
+              myFilePicker();
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => AlertDialog(
+                  title: const Text('Information'),
+                  content: const Text(
+                      'If a file is selected, the output file will be created in the same directory.'),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, 'OK'),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                Container(
+                    width: 500,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {displayStep++;setState((){});},
+                          // {
+                          //   if (!outputRan &&
+                          //       displayStep < outputLines.length) {
+                          //     displayStep++;
+                          //     displayTxt += '${outputLines[displayStep]}\n\n';
+                          //     displayOutput();
+                          //   }
+                          // },
+                          child: const Text('Step'),
+                        ),
+                        ElevatedButton(
+                            onPressed: () =>null,
+                            // {
+                            //   if (!outputRan) {
+                            //     outputRan = true;
+                            //     displayTxt = outputTxt;
+                            //     if (myFile != null) {
+                            //       displayStep = outputReg.length - 1;
+                            //     }
+                            //     displayOutput();
+                            //   }
+                            // },
+                            child: const Text('Run')),
+                        ElevatedButton(
+                            onPressed: (){
+                              outputRan = false;
+                              // displayTxt = '${outputLines[0]}\n\n';
+                              displayStep = 0;
+                              setState((){});
+                              ////////////////////copy to forwarding
+                            },
+                            child: const Text('Reset')),
+                        ElevatedButton(
+                            style: ElevatedButton.styleFrom(primary:(solver.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solver.knob2=!solver.knob2;
+
+                              setState((){});
+                            },
+                            child: const Text('Forwarding'))
+                        ,
+                      ],
+                    )),
+                const SizedBox(
+                  height: 10,
+                ),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: SelectableText(
+                          solver.displayTxt,
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                      ),
+                    )),
+                const SizedBox(height: 5),
+                Expanded(
+                    child: Container(
+                      width: 500,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 1,
+                        ),
+                        borderRadius: const BorderRadius.all(Radius.circular(10)),
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical,
+                        child: Column(
+                          children: [
+                            Text(
+                              (whatDisplay==0)?'Register File':'Pipeline Registers',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+                            const SizedBox(
+                              height: 10,
+                            ),
+                            if (myFile != null)
+                              (whatDisplay==0)?displayRF():displayPR(),
+                          ],
+                        ),
+                      ),
+                    ))
+              ],
+            ),
+            const SizedBox(width: 15),
+            ExecutionDiagram(isPipelined: true,updateDisplay: (int v){whatDisplay=v;setState(() {});},)
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 class BTB{
   var address;
   var branchtarget;
@@ -11,10 +1502,19 @@ class BTB{
     this.branchtarget=branchtarget;
   }
 }
+class solvePipelined {
+  Map<int,String> IFDE={};
+  Map<int,String> DEEX={};
+  Map<int,String> EXMA={};
+  Map<int,String> MAWB={};
+  String displayTxt='CYCLES ELAPSED: 0\nFETCH: EMPTY\nDECODE: EMPTY\nEXECUTE: EMPTY\nMEMORY: EMPTY\nWRITEBACK: EMPTY\n';
+  List<String> outputReg = ['0${'\t0'*31}'];
+
+
   int pc = 0,count=0,btarget=0,instructCount=0,dataCount=0,controlCount=0,stallCount=0,dataHazard=0,controlHazard=0,misPredict=0,dataStalls=0,controlStalls=0;
-  bool 
+  bool
       knob1=true,
-      knob2=true,
+      knob2=false,
       running=true,
       isBranchtaken=false,
       loadHazard=false;
@@ -36,7 +1536,7 @@ class BTB{
   List <BTB> buffer=[];
 
   void dec2bin(int value) {
-     if (value < 0) value = (1 << 32) + value;
+    if (value < 0) value = (1 << 32) + value;
 
     for (int i = 0; i < 32; i++) {
       t[i] = 0;
@@ -50,7 +1550,6 @@ class BTB{
       i++;
     }
   }
-
   int comp2() {
 
     int c = t[31];
@@ -83,7 +1582,6 @@ class BTB{
   int lw(int Eaddress) {
     return MEM[Eaddress] ?? 0;
   }
-
   int lb(int Eaddress, int index) {
     int element = MEM[Eaddress] ?? 0;
     int data = ((element >> (8 * index)) & 0xFF);
@@ -95,7 +1593,6 @@ class BTB{
     }
     return comp2();
   }
-
   int lh(int Eaddress, int index) {
     int element = MEM[Eaddress] ?? 0;
     int data = ((element >> (8 * index)) & 0xFFFF);
@@ -107,7 +1604,6 @@ class BTB{
     }
     return comp2();
   }
-
   void sb(int Eaddress, int index) {
     int datain=ex_ma[3];
     if(src2Hazard(ma_wb[1], ex_ma[1]) && knob2==true){
@@ -124,7 +1620,6 @@ class BTB{
     }
     MEM[Eaddress] = comp2();
   }
-
   void sh(int Eaddress, int index) {
     int datain=ex_ma[3];
     if(src2Hazard(ma_wb[1], ex_ma[1]) && knob2==true){
@@ -141,7 +1636,6 @@ class BTB{
     }
     MEM[Eaddress] = comp2();
   }
-
   void sw(int Eaddress) {
     int datain=ex_ma[3];
     if(src2Hazard(ma_wb[1], ex_ma[1]) && knob2==true){
@@ -151,25 +1645,28 @@ class BTB{
   }
 
   void fetch() {
-     t1[0]=pc;t1[1]=INS[pc]??0;
-     displayTxt +='FETCH: Read instruction from address 0x${pc.toRadixString(16)}.\n';
+    t1[0]=pc;t1[1]=INS[pc]??0;
+    displayTxt +='FETCH: Read instruction from address 0x${pc.toRadixString(16)}.\n';
   }
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   void decode_p(){
+    if(if_de[1]==0) {
+      displayTxt += "DECODE: EMPTY\n";
+      return;
+    }
     //0,1,2,3,4,6,7,9,10,11
     t2[0]=if_de[0];t2[1]=if_de[1];
     t2[2]=RF[(t2[1]>>20)&0x1F];
     t2[3]=RF[(t2[1]>>15)&0x1F];
     //display
     displayTxt += "DECODE: ";
-    if(if_de[1]&0x7F==99 ||if_de[1]&0x7F == 111 || if_de[1]&0x7F==103)displayTxt += "\nControl Hazard detected at instruction ${if_de[0]/4}\n";
+    if(if_de[1]&0x7F==99 ||if_de[1]&0x7F == 111 || if_de[1]&0x7F==103)displayTxt += "\nControl Hazard detected at instruction ${(if_de[0]/4).toInt()}\n";
     if(knob2==true){
-    //forwarding:
-      if(src1Hazard(ma_wb[1],if_de[1])){t2[3]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${if_de[0]/4}(Decode) and ${ma_wb[0]/4}(Writeback) and WB-DE forwarding used.\n";}
-      if(src2Hazard(ma_wb[1],if_de[1])){t2[2]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${if_de[0]/4}(Decode) and ${ma_wb[0]/4}(Writeback) and WB-DE forwarding used.\n";}
-    //load-use hazard
-     if(src2Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;displayTxt+="\nLoad Hazard detected between instructions number ${if_de[0]/4}(Decode) and ${de_ex[0]/4}(Execute) and no forwarding used.\n";}
-     if(src1Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;displayTxt+="\nLoad Hazard detected between instructions number ${if_de[0]/4}(Decode) and ${de_ex[0]/4}(Execute) and no forwarding used.\n";}
+      //forwarding:
+      if(src1Hazard(ma_wb[1],if_de[1])){t2[3]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-DE forwarding used.\n";}
+      if(src2Hazard(ma_wb[1],if_de[1])){t2[2]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-DE forwarding used.\n";}
+      //load-use hazard
+      if(src2Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;displayTxt+="\nLoad Hazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(de_ex[0]/4).toInt()}(Execute) and no forwarding used.\n";}
+      if(src1Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;displayTxt+="\nLoad Hazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(de_ex[0]/4).toInt()}(Execute) and no forwarding used.\n";}
     }
 
     //immediate
@@ -224,7 +1721,7 @@ class BTB{
         im[i] = im[12];
       }
     }
-    
+
     //s type
     else if(if_de[1]&0x7F==35)
     {
@@ -254,14 +1751,14 @@ class BTB{
     else if(t2[1]&0x7F==23)t2[9]=3;//auipc
     else if(t2[1]&0x7F==55)t2[9]=4;//lui
 
-   //op2select
+    //op2select
     if(t2[1]&0x7F==19 || t2[1]&0x7F==3 || t2[1]&0x7F==35 || t2[1]&0x7F==103)t2[6]=1;
 
-   //MEmop
+    //MEmop
     if(t2[1]&0x7F==35)t2[10]=1;//for store
-     
 
-   //ALUOP
+
+    //ALUOP
     if (t2[1]&0x7F == 99 || (t2[1]&0x7F == 51 && t2[1]>>12&0x7 == 0 && t2[1]>>25&0x7F == 32)) {
       t2[7] = 1;
     } //sub
@@ -278,12 +1775,12 @@ class BTB{
       else if(t2[1]>>12&0x7==5 && t2[1]>>25&0x7F==0)
         t2[7] = 6; //srl
       else if(t2[1]>>12&0x7==2)t2[7]=8;
-    }   
-    
-    if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${if_de[0]/4}, ";}
+    }
+
+    if(!(if_de[0]==0 && if_de[1]==19 )){displayTxt += "Instruction number ${(if_de[0]/4).toInt()}, ";}
     displayTxt += "Operation is ";
     if(if_de[0]==0 && if_de[1]==19){
-       displayTxt+="NOP/bubble instruction\n";
+      displayTxt+="NOP/bubble instruction\n";
     }
     else if (if_de[1]&0x7F == 51) {
       if ((if_de[1]>>12)&0x7 == 0) {
@@ -363,59 +1860,63 @@ class BTB{
     }
   }
   void execute() {
+    if(de_ex[1]==0) {
+      displayTxt += "EXECUTE: EMPTY\n";
+      return;
+    }
     //0,1,3,4,5,6,7,8
     //////////////////////pipelined////////////////////////////////////////
-      t3[0]=de_ex[0];
-      t3[1]=de_ex[1];
-      t3[3]=de_ex[2];
-      t3[4]=de_ex[10];
-      t3[5]=de_ex[9];
-      t3[6]=de_ex[11];
-      t3[7]=de_ex[12];
-      t3[8]=de_ex[4];
+    t3[0]=de_ex[0];
+    t3[1]=de_ex[1];
+    t3[3]=de_ex[2];
+    t3[4]=de_ex[10];
+    t3[5]=de_ex[9];
+    t3[6]=de_ex[11];
+    t3[7]=de_ex[12];
+    t3[8]=de_ex[4];
 
-      displayTxt += "EXECUTE: ";
-      if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${de_ex[0]/4}, ";}
-      if(de_ex[0]==0 && de_ex[1]==19)displayTxt+="NOP/BUBBLE instruction  ";
-      int temp = de_ex[2];
-      int op1=de_ex[3];
-      if(knob2==true){
+    displayTxt += "EXECUTE: ";
+    if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${(de_ex[0]/4).toInt()}, ";}
+    if(de_ex[0]==0 && de_ex[1]==19)displayTxt+="NOP/BUBBLE instruction  ";
+    int temp = de_ex[2];
+    int op1=de_ex[3];
+    if(knob2==true){
       //forwarding:
       if(src1Hazard(ex_ma[1],de_ex[1]) && ex_ma[1]&0x7F!=3){
-        displayTxt+="\nHazard detected between instructions number ${de_ex[0]/4}(Execute) and ${ex_ma[0]/4}(Memory) and MA-EX forwarding used.\n";
+        displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ex_ma[0]/4).toInt()}(Memory) and MA-EX forwarding used.\n";
         if(ex_ma[5]==0){
-        op1=ex_ma[2];
-      }
-      else if(ex_ma[5]==2){
-        op1=ex_ma[0]+4;
-      }
-      else if(ex_ma[5]==3){
-        op1=ex_ma[0]+ex_ma[8];
-      }
-      else if(ex_ma[5]==4){
-        op1=ex_ma[8];
-      }}
-      else if(src1Hazard(ma_wb[1],de_ex[1])){op1=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${de_ex[0]/4}(Execute) and ${ma_wb[0]/4}(Writeback) and WB-EX forwarding used.\n";}
-    
+          op1=ex_ma[2];
+        }
+        else if(ex_ma[5]==2){
+          op1=ex_ma[0]+4;
+        }
+        else if(ex_ma[5]==3){
+          op1=ex_ma[0]+ex_ma[8];
+        }
+        else if(ex_ma[5]==4){
+          op1=ex_ma[8];
+        }}
+      else if(src1Hazard(ma_wb[1],de_ex[1])){op1=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-EX forwarding used.\n";}
+
 
       if(src2Hazard(ex_ma[1],de_ex[1]) && ex_ma[1]&0x7F!=3){
-        displayTxt+="\nHazard detected between instructions number ${de_ex[0]/4}(Execute) and ${ex_ma[0]/4}(Memory) and MA-EX forwarding used.\n";
-      if(ex_ma[5]==0){
-        temp=ex_ma[2];t3[3]=ex_ma[2];
-      }
-      else if(ex_ma[5]==2){
-        temp=ex_ma[0]+4;t3[3]=ex_ma[0]+4;
-      }
-      else if(ex_ma[5]==3){
-        temp=ex_ma[0]+ex_ma[8];t3[3]=ex_ma[0]+ex_ma[8];
-      }
-      else if(ex_ma[5]==4){
-        temp=ex_ma[8];t3[3]=ex_ma[8];
-      }}
-      else if(src2Hazard(ma_wb[1],de_ex[1])){temp=ma_wb[2];t3[3]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${de_ex[0]/4}(Execute) and ${ma_wb[0]/4}(Writeback) and WB-EX forwarding used.\n";}
+        displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ex_ma[0]/4).toInt()}(Memory) and MA-EX forwarding used.\n";
+        if(ex_ma[5]==0){
+          temp=ex_ma[2];t3[3]=ex_ma[2];
+        }
+        else if(ex_ma[5]==2){
+          temp=ex_ma[0]+4;t3[3]=ex_ma[0]+4;
+        }
+        else if(ex_ma[5]==3){
+          temp=ex_ma[0]+ex_ma[8];t3[3]=ex_ma[0]+ex_ma[8];
+        }
+        else if(ex_ma[5]==4){
+          temp=ex_ma[8];t3[3]=ex_ma[8];
+        }}
+      else if(src2Hazard(ma_wb[1],de_ex[1])){temp=ma_wb[2];t3[3]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-EX forwarding used.\n";}
       //forwarding stopped
-      }
-    
+    }
+
     if (de_ex[6]==1) temp = de_ex[4];
     switch (de_ex[7]) {
       case 0:
@@ -514,10 +2015,10 @@ class BTB{
     if(de_ex[1]&0x7F==99 || de_ex[1]&0x7F==111 || de_ex[1]&0x7F==103){
       bool flag=false;
       for(int i=0;i<buffer.length;i++){
-         if(buffer[i].address==de_ex[0]){flag=true;index=i;break;}
+        if(buffer[i].address==de_ex[0]){flag=true;index=i;break;}
       }
       //adding to buffer
-      displayTxt+="\nBranch predictor used for instruction ${de_ex[0]/4} ";
+      displayTxt+="\nBranch predictor used for instruction ${(de_ex[0]).toInt()} ";
       if(flag==false){
         var block=new BTB(de_ex[0],btarget,false);
         if(de_ex[1]&0x7F==111 || de_ex[1]&0x7F==103)block.branchtaken=true;
@@ -525,7 +2026,7 @@ class BTB{
         index=buffer.length-1;
         if(block.branchtaken==true)displayTxt+="and branch taken.\n";
         else displayTxt+="and no branch taken.\n";
-       }
+      }
     }
     ////////branch target remaining////////////
     if(t3[7]==1 && (de_ex[1]&0x7F==99 || de_ex[1]&0x7F == 111 || de_ex[1]&0x7F==103)){isBranchtaken=true;}
@@ -538,38 +2039,42 @@ class BTB{
 
   }
   void memory() {
-    //pipelined// 
+    if(ex_ma[1]==0) {
+      displayTxt += "DECODE: EMPTY\n";
+      return;
+    }
+    //pipelined//
     if(knob1==true){
       t4[0]=ex_ma[0];t4[1]=ex_ma[1];t4[3]=ex_ma[6];t4[4]=ex_ma[7];
       int Eaddress = ex_ma[2] - (ex_ma[2] % 4);
       int index = ex_ma[2] % 4;
       for (int i = 0; i < 32; i++) {
-      t[i] = 0;
-    }
-    displayTxt += "MEMORY: ";
-    if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${ex_ma[0]/4}, ";}
-    if (ex_ma[4] == 0) {
-      if (ex_ma[1]&0x7F == 3)displayTxt += "Load from address 0x${ex_ma[2].toRadixString(16)}.\n";
-      else{
-        displayTxt += "No memory operation.\n";
+        t[i] = 0;
       }
-      if ((ex_ma[1]>>12)&0x3 == 0) {
-        t4[2]=lb(Eaddress, index);
-      } else if ((ex_ma[1]>>12)&0x3 == 1) {
-        t4[2]=lh(Eaddress, index);
-      } else if((ex_ma[1]>>12)&0x3 == 2) {
-        t4[2]=lw(Eaddress);
+      displayTxt += "MEMORY: ";
+      if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${(ex_ma[0]/4).toInt()}, ";}
+      if (ex_ma[4] == 0) {
+        if (ex_ma[1]&0x7F == 3)displayTxt += "Load from address 0x${ex_ma[2].toRadixString(16)}.\n";
+        else{
+          displayTxt += "No memory operation.\n";
+        }
+        if ((ex_ma[1]>>12)&0x3 == 0) {
+          t4[2]=lb(Eaddress, index);
+        } else if ((ex_ma[1]>>12)&0x3 == 1) {
+          t4[2]=lh(Eaddress, index);
+        } else if((ex_ma[1]>>12)&0x3 == 2) {
+          t4[2]=lw(Eaddress);
+        }
+      } else if(ex_ma[4]==1) {
+        displayTxt += "Store at address 0x${ex_ma[2].toRadixString(16)}.\n";
+        if ((ex_ma[1]>>12)&0x3 == 0) {
+          sb(Eaddress, index);
+        } else if ((ex_ma[1]>>12)&0x3 == 1) {
+          sh(Eaddress, index);
+        } else if((ex_ma[1]>>12)&0x3 == 2) {
+          sw(Eaddress);
+        }
       }
-    } else if(ex_ma[4]==1) {
-       displayTxt += "Store at address 0x${ex_ma[2].toRadixString(16)}.\n";
-      if ((ex_ma[1]>>12)&0x3 == 0) {
-        sb(Eaddress, index);
-      } else if ((ex_ma[1]>>12)&0x3 == 1) {
-        sh(Eaddress, index);
-      } else if((ex_ma[1]>>12)&0x3 == 2) {
-        sw(Eaddress);
-      }
-    }
       if(ex_ma[1]==19 && ex_ma[0]==0){displayTxt+="NOP/BUBBLE instruction.\n";}
       if(ex_ma[5]==0){
         t4[2]=ex_ma[2];
@@ -584,58 +2089,60 @@ class BTB{
         t4[2]=ex_ma[8];
       }
     }
-    if(src2Hazard(ma_wb[1], ex_ma[1]) && knob2==true)displayTxt+="\nHazard detected between instructions number ${ex_ma[0]/4}(Memory) and ${ma_wb[0]/4}(Writeback) and WB-MA forwarding used.\n";
+    if(src2Hazard(ma_wb[1], ex_ma[1]) && knob2==true)displayTxt+="\nHazard detected between instructions number ${(ex_ma[0]/4).toInt()}(Memory) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-MA forwarding used.\n";
   }
   void write_back(File f) {
-        displayTxt += "WRITEBACK: ";
-        if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${ma_wb[0]/4}, ";}
-        if( ma_wb[3]==1  &&   ((ma_wb[1]>>7)&0x1F)!=0 ){
-          displayTxt += "Write to x${(ma_wb[1]>>7)&0x1F}.\n ";
-          RF[(ma_wb[1]>>7)&0x1F]=ma_wb[2];
-        }else{
-          displayTxt += "No writeback.";
-        }
-        if(ma_wb[0]==0 && ma_wb[1]==19){displayTxt+="NOP/BUBBLE instruction.\n";}
-        displayTxt+="\n";
-        if(ma_wb[1]==1 ){swi_exit(f);}
-        //stats
-        if(!((ma_wb[1]==19 && ma_wb[3]==0) || ma_wb[1]==0)){instructCount++;}
-        if(ma_wb[1]&0x7F==35 || ma_wb[1]&0x7F==3){dataCount++;}
-        if(ma_wb[1]&0x7F==99 || ma_wb[1]&0x7F == 111 || ma_wb[1]&0x7F==103){controlCount++;}
-        if(ma_wb[1]&0x7F==99){controlHazard++;}
+    if(ma_wb[1]==0) {
+      displayTxt += "DECODE: EMPTY\n";
+      return;
+    }
+    displayTxt += "WRITEBACK: ";
+    if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${(ma_wb[0]/4).toInt()}, ";}
+    if( ma_wb[3]==1  &&   ((ma_wb[1]>>7)&0x1F)!=0 ){
+      displayTxt += "Write to x${(ma_wb[1]>>7)&0x1F}.\n ";
+      RF[(ma_wb[1]>>7)&0x1F]=ma_wb[2];
+    }else{
+      displayTxt += "No writeback.\n";
+    }
+    if(ma_wb[0]==0 && ma_wb[1]==19){displayTxt+="NOP/BUBBLE instruction.\n";}
+    if(ma_wb[1]==1 ){swi_exit(f);}
+    //stats
+    if(!((ma_wb[1]==19 && ma_wb[3]==0) || ma_wb[1]==0)){instructCount++;}
+    if(ma_wb[1]&0x7F==35 || ma_wb[1]&0x7F==3){dataCount++;}
+    if(ma_wb[1]&0x7F==99 || ma_wb[1]&0x7F == 111 || ma_wb[1]&0x7F==103){controlCount++;}
+    if(ma_wb[1]&0x7F==99){controlHazard++;}
   }
-  void transfer()
-  {
+  void transfer() {
     ////data forwarding////
     if(knob2==true){
       if(loadHazard==false){
-  
-      if(btarget!=if_de[0] && de_ex[1]!=0 && de_ex[1]!=19 ){
-        pc=btarget;if_de[0]=0;if_de[1]=19;de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}
-        stallCount+=2;
-        controlStalls+=2;
-        misPredict++;
+
+        if(btarget!=if_de[0] && de_ex[1]!=0 && de_ex[1]!=19 ){
+          pc=btarget;if_de[0]=0;if_de[1]=19;de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}
+          stallCount+=2;
+          controlStalls+=2;
+          misPredict++;
+        }
+        else {
+          //display
+          bool check=false;
+          int progControl=pc;
+          pc=pc+4;
+          for(int i=0;i<buffer.length;i++){
+            if(buffer[i].address ==  (pc-4) && buffer[i].branchtaken==true){pc=buffer[i].branchtarget;check=true;}
+          }
+          //if to de//
+          if_de[0]=t1[0];if_de[1]=t1[1];
+          //de to ex//
+          for(int i=0;i<13;i++){de_ex[i]=t2[i];}
+          if(check==true)displayTxt+="\nBranch predictor used for instruction ${(progControl/4).toInt()} and branch taken.\n";
+          else displayTxt+="\nBranch predictor used for instruction ${(progControl/4).toInt()} and branch not taken.\n";
+        }
       }
-      else {
-                //display
-                bool check=false;
-                int progControl=pc;
-                pc=pc+4;
-                for(int i=0;i<buffer.length;i++){
-                  if(buffer[i].address ==  (pc-4) && buffer[i].branchtaken==true){pc=buffer[i].branchtarget;check=true;}
-                }
-                 //if to de//
-                 if_de[0]=t1[0];if_de[1]=t1[1];
-                 //de to ex//
-                 for(int i=0;i<13;i++){de_ex[i]=t2[i];}
-                 if(check==true)displayTxt+="\nBranch predictor used for instruction ${progControl/4} and branch taken.\n";
-                 else displayTxt+="\nBranch predictor used for instruction ${progControl/4} and branch not taken.\n";
-           }
-      }
-        else{
-            
-            de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}loadHazard=false;
-            stallCount++;dataStalls++;dataHazard++;}
+      else{
+
+        de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}loadHazard=false;
+        stallCount++;dataStalls++;dataHazard++;}
     }
     ///no data forwarding///
     else{
@@ -644,49 +2151,50 @@ class BTB{
         stallCount=stallCount+2;
         controlStalls=controlStalls+2;
         misPredict++;
-        }
+      }
       else {
-        
-        
+
+
         if(hazardDetect(de_ex[1])==false && hazardDetect(ex_ma[1])==false && hazardDetect(ma_wb[1])==false){
-            pc=pc+4;
-            for(int i=0;i<buffer.length;i++){
+          pc=pc+4;
+          for(int i=0;i<buffer.length;i++){
             if(buffer[i].address ==  (pc-4) && buffer[i].branchtaken==true){pc=buffer[i].branchtarget;}
-            }
-            //if to de//
-            if_de[0]=t1[0];if_de[1]=t1[1];
-            //de to ex//
-            for(int i=0;i<13;i++){de_ex[i]=t2[i];}
+          }
+          //if to de//
+          if_de[0]=t1[0];if_de[1]=t1[1];
+          //de to ex//
+          for(int i=0;i<13;i++){de_ex[i]=t2[i];}
         }
         else{
           //hazard print
-          if(hazardDetect(de_ex[1])==true)displayTxt+="\nHazard detected between instructions number ${if_de[0]/4}(Decode) and ${de_ex[0]/4}(Execute).\n";
-          else if(hazardDetect(ex_ma[1])==true)displayTxt+="\nHazard detected between instructions number ${if_de[0]/4}(Decode) and ${ex_ma[0]/4}(Memory).\n";
-          else if(hazardDetect(ma_wb[1])==true)displayTxt+="\nHazard detected between instructions number ${if_de[0]/4}(Decode) and ${ma_wb[0]/4}(Writeback).\n";
-            de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}
-            stallCount++;
-            dataHazard++;
-            dataStalls++;
+          if(hazardDetect(de_ex[1])==true)displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(de_ex[0]/4).toInt()}(Execute).\n";
+          else if(hazardDetect(ex_ma[1])==true)displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ex_ma[0]/4).toInt()}(Memory).\n";
+          else if(hazardDetect(ma_wb[1])==true)displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ma_wb[0]/4).toInt()}(Writeback).\n";
+          de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}
+          stallCount++;
+          dataHazard++;
+          dataStalls++;
         }
-        }
+      }
     }
 
-     //ma to wb//
-     for(int i=0;i<9;i++){ex_ma[i]=t3[i];t3[i]=0;}
-     for(int i=0;i<5;i++){ma_wb[i]=t4[i];t4[i]=0;}
-     //temp//
-     for(int i=0;i<13;i++){t2[i]=0;}
-     t1[0]=0;t1[1]=0;
+    //ma to wb//
+    for(int i=0;i<9;i++){ex_ma[i]=t3[i];t3[i]=0;}
+    for(int i=0;i<5;i++){ma_wb[i]=t4[i];t4[i]=0;}
+    //temp//
+    for(int i=0;i<13;i++){t2[i]=0;}
+    t1[0]=0;t1[1]=0;
   }
+
   void swi_exit(File f) {
     write_datamemory(f);
     running = false;
   }
   void write_datamemory(File myOutFile) {
     var sortedINS = Map.fromEntries(
-    INS.entries.toList()..sort((e1, e2) => e1.key.compareTo(e2.key)));
+        INS.entries.toList()..sort((e1, e2) => e1.key.compareTo(e2.key)));
     var sortedMEM = Map.fromEntries(
-    MEM.entries.toList()..sort((e1, e2) => e1.key.compareTo(e2.key)));
+        MEM.entries.toList()..sort((e1, e2) => e1.key.compareTo(e2.key)));
     myOutFile.writeAsStringSync("TEXT segment: \n",
         mode: FileMode.append);
     myOutFile.writeAsStringSync("ADDRESS\t\t\t\tINSTRUCTION\t\t\tDECIMAL\n\n",
@@ -733,7 +2241,7 @@ class BTB{
     myOutFile.writeAsStringSync("\nData hazards count:  ${dataHazard}\nControl hazards count:  ${controlHazard}\nBranch mispredictions count:  ${misPredict}", mode: FileMode.append);
     myOutFile.writeAsStringSync("\nNumber of stalls due to data hazards:  ${dataStalls}\nNumber of stalls due to control hazards:  ${controlStalls}.", mode: FileMode.append);
   }
-  bool src1Hazard(int write,int read){
+  bool src1Hazard(int write,int read) {
     int opcode1=write&0x7F,opcode2=read&0x7F;
     if(opcode1==35 || opcode1==99 || opcode1==0 || write==19){return false;}
     if(opcode2==111 || opcode2==55 || opcode2==23 || read==19){return false;}
@@ -741,7 +2249,7 @@ class BTB{
     if((src1!=0) && (src1 == dest)){return true;}
     return false;
   }
-  bool src2Hazard(int write,int read){
+  bool src2Hazard(int write,int read) {
     bool hasrs2=false;
     int opcode1=write&0x7F,opcode2=read&0x7F;
     if(opcode1==35 || opcode1==99 || opcode1==0 || write==19){return false;}
@@ -751,7 +2259,7 @@ class BTB{
     if(hasrs2==true &&(src2!=0) && (src2 == dest)){return true;}
     return false;
   }
-  bool hazardDetect(int instruction){
+  bool hazardDetect(int instruction) {
     int opcode=instruction&0x7F;
     bool hasrs1=true,hasrs2=false;
     if(opcode==35 || opcode==99 || opcode==0 || instruction==19){return false;}
@@ -762,26 +2270,8 @@ class BTB{
     else if(hasrs2==true &&(src2!=0) && (src2 == dest)){return true;}
     return false;
   }
-  void run_riscvsim(File f){
-    while(running){
-      fetch();
-      decode_p();
-      execute();
-      memory();
-      write_back(f);
-      // print("**************************");
-      // print(pc);
-      // print(if_de);
-      // print(de_ex);
-      // print(ex_ma);
-      // print(ma_wb);
-      print(RF);
-      count++;
-      transfer();
-    }
-  }
 
-  void load_progmem(){
+  void load_progmem() {
     for(int i=0;i<n.length;i++)
     {
       String s=n[i];
@@ -816,21 +2306,89 @@ class BTB{
       dec2bin(address);
       address=comp2();
       if(address>=0x10000000)
-      MEM[address]=instruct;
+        MEM[address]=instruct;
       else
-      INS[address]=instruct;
+        INS[address]=instruct;
     }
   }
+  void run_riscvsim(File f)async{
+    f.writeAsStringSync("",
+        mode: FileMode.write);
+    while(running){
+      displayTxt+='\nCYCLES ELAPSED: ${count+1}\n';
+      fetch();
+      decode_p();
+      execute();
+      memory();
+      write_back(f);
 
-void main() {
-  var path='test.txt';
-  var file= new File(path);
-  var outFile=new File('out.txt');
-  List<String> s=file.readAsLinesSync();
-  for(int i=0;i<s.length;i++)
-  {n.add(s[i]);}
-  RF[2]=2147483644;
-  buffer.add(new BTB(-1,-1,false));
-  load_progmem();
-  run_riscvsim(outFile);
+      // print("**************************");
+      // print(pc);
+      // print(if_de);
+      // print(de_ex);
+      // print(ex_ma);
+      // print(ma_wb);
+      // print(RF);
+      count++;
+      transfer();
+      outputReg.add(RF.join('\t'));
+      IFDE[count]=if_de.toString();
+      DEEX[count]=de_ex.toString();
+      EXMA[count]=ex_ma.toString();
+      MAWB[count]=ma_wb.toString();
+
+      // print(count.toString()+if_de.toString());
+    }
+  }
+  void solve(File inputFile,File outputFile)async {
+    IFDE={};
+    DEEX={};
+    EXMA={};
+    MAWB={};
+    displayTxt='CYCLES ELAPSED: 0\nFETCH: EMPTY\nDECODE: EMPTY\nEXECUTE: EMPTY\nMEMORY: EMPTY\nWRITEBACK: EMPTY\n';
+    outputReg = ['0${'\t0'*31}'];
+    pc = 0;
+    count=0;
+    btarget=0;
+    instructCount=0;
+    dataCount=0;
+    controlCount=0;
+    stallCount=0;
+    dataHazard=0;
+    controlHazard=0;
+    misPredict=0;
+    dataStalls=0;
+    controlStalls=0;
+
+    knob1=true;
+    running=true;
+    isBranchtaken=false;
+    loadHazard=false;
+    n=[];
+    for (var element in RF) {element=0;}
+    for (var element in b) {element=0;}
+    for (var element in im) {element=0;}
+    for (var element in t) {element=0;}
+    for (var element in if_de) {element=0;}
+    for (var element in t1) {element=0;}
+    for (var element in de_ex) {element=0;}
+    for (var element in t2) {element=0;}
+    for (var element in ex_ma) {element=0;}
+    for (var element in t3) {element=0;}
+    for (var element in ma_wb) {element=0;}
+    for (var element in t4) {element=0;}
+    MEM = {};
+    INS={};
+    buffer=[];
+
+    List<String> s = inputFile.readAsLinesSync();
+    for(int i=0;i<s.length;i++) {
+      n.add(s[i]);
+    }
+    RF[2]=2147483644;
+    buffer.add(new BTB(-1,-1,false));
+
+    load_progmem();
+    run_riscvsim(outputFile);
+  }
 }
