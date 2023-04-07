@@ -4,14 +4,14 @@ Table of contents
 - How to Execute
   
 ## Directory Structure
-1. **Release**
+### Release
 - includes  the assets and `.exe` file to run the program
-2. **design**
+### design
 - decribes the design specifications of this simulator
-3. **src**
+### src
 - includes `main.dart` on which the whole software is based
 - also includes **backend** which includes the algorithms for respective segments  
-4. **test**
+### test
 - includes three `.mc` files for testing
 
 ## How to execute
