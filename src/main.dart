@@ -1238,7 +1238,6 @@ class Pipelined extends StatefulWidget {
   State<Pipelined> createState() => _PipelinedState();
 }
 class _PipelinedState extends State<Pipelined> {
-  bool outputRan = false;
   int whatDisplay=0;
   solvePipelined solver = solvePipelined();
   int displayStep=0;
@@ -1256,6 +1255,7 @@ class _PipelinedState extends State<Pipelined> {
     File outputFile = File(strPath);
     File inputFile = File(myFile!.name);
     solver.solve(inputFile, outputFile);
+    displayStep=0;
     setState((){});
   }
 
@@ -1270,48 +1270,48 @@ class _PipelinedState extends State<Pipelined> {
           SizedBox(width: 150,),
           Container(
             height: 25,
-            child: Text("x${i}: ${rf[i]}"),
+            child: Text("x${i}: ${rf[i]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 1}: ${rf[i + 1]}"),
+            child: Text("x${i + 1}: ${rf[i + 1]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 2}: ${rf[i + 2]}"),
+            child: Text("x${i + 2}: ${rf[i + 2]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 3}: ${rf[i + 3]}"),
+            child: Text("x${i + 3}: ${rf[i + 3]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 4}: ${rf[i + 4]}"),
+            child: Text("x${i + 4}: ${rf[i + 4]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 5}: ${rf[i + 5]}"),
+            child: Text("x${i + 5}: ${rf[i + 5]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 6}: ${rf[i + 6]}"),
+            child: Text("x${i + 6}: ${rf[i + 6]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 7}: ${rf[i + 7]}"),
+            child: Text("x${i + 7}: ${rf[i + 7]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 8}: ${rf[i + 8]}"),
+            child: Text("x${i + 8}: ${rf[i + 8]}",style:TextStyle(fontSize: 16)),
           ),
           Container(
             height: 25,
-            child: Text("x${i + 9}: ${rf[i + 9]}"),
+            child: Text("x${i + 9}: ${rf[i + 9]}",style:TextStyle(fontSize: 16)),
           ),
           if(i!=22)
             Container(
               height: 25,
-              child: Text("x${i + 10}: ${rf[i + 10]}"),
+              child: Text("x${i + 10}: ${rf[i + 10]}",style:TextStyle(fontSize: 16)),
             ),
         ],
       ));
@@ -1335,25 +1335,27 @@ class _PipelinedState extends State<Pipelined> {
       children: [
         const SizedBox(width: 400,),
         if(whatDisplay==1)Column(
-          children:[
-            (solver.IFDE[displayStep]==null)?const SelectableText('Empty'):
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        SelectableText('PC'),
-                        SelectableText(a1[0]),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        SelectableText('INSTRUCTION'),
-                        SelectableText(a1[1]),
-                      ],
-                    ),
-                  ],
-                )
-          ]
+            children:[
+              (solver.IFDE[displayStep]==null)?const SelectableText('Empty'):
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      SizedBox(width:170),
+                      SelectableText('PC:\t'),
+                      SelectableText(a1[0]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SizedBox(width:170),
+                      SelectableText('INSTRUCTION:\t'),
+                      SelectableText(a1[1]),
+                    ],
+                  ),
+                ],
+              )
+            ]
         ),
         if(whatDisplay==2)Column(
             children:[
@@ -1362,79 +1364,93 @@ class _PipelinedState extends State<Pipelined> {
                 children: [
                   Row(
                     children: [
-                      SelectableText('PC'),
+                      SizedBox(width:170),
+                      SelectableText('PC:\t'),
                       SelectableText(a2[0]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('INSTRUCTION'),
+                      SizedBox(width:170),
+                      SelectableText('INSTRUCTION:\t'),
                       SelectableText(a2[1]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('OP2'),
+                      SizedBox(width:170),
+                      SelectableText('OP2:\t'),
                       SelectableText(a2[2]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('OP1'),
+                      SizedBox(width:170),
+                      SelectableText('OP1:\t'),
                       SelectableText(a2[3]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('IMMEDIATE'),
+                      SizedBox(width:170),
+                      SelectableText('IMMEDIATE:\t'),
                       SelectableText(a2[4]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('BRANCH TARGET'),
+                      SizedBox(width:170),
+                      SelectableText('BRANCH TARGET:\t'),
                       SelectableText(a2[5]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('OP2 SELECT'),
+                      SizedBox(width:170),
+                      SelectableText('OP2 SELECT:\t'),
                       SelectableText(a2[6]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('ALU OP'),
+                      SizedBox(width:170),
+                      SelectableText('ALU OP:\t'),
                       SelectableText(a2[7]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('BRANCH SELECT'),
+                      SizedBox(width:170),
+                      SelectableText('BRANCH SELECT:\t'),
                       SelectableText(a2[8]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('RESULT SELECT'),
+                      SizedBox(width:170),
+                      SelectableText('RESULT SELECT:\t'),
                       SelectableText(a2[9]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('MEMORY OP'),
+                      SizedBox(width:170),
+                      SelectableText('MEMORY OP:\t'),
                       SelectableText(a2[10]),
                     ],
                   ),
                   Row(
+
                     children: [
-                      SelectableText('RF WRITE'),
+                      SizedBox(width:170),
+                      SelectableText('RF WRITE:\t'),
                       SelectableText(a2[11]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('IS BRANCH'),
+                      SizedBox(width:170),
+                      SelectableText('IS BRANCH:\t'),
                       SelectableText(a2[12]),
                     ],
                   ),
@@ -1450,55 +1466,64 @@ class _PipelinedState extends State<Pipelined> {
                 children: [
                   Row(
                     children: [
-                      SelectableText('PC'),
+                      SizedBox(width:170),
+                      SelectableText('PC:\t'),
                       SelectableText(a3[0]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('INSTRUCTION'),
+                      SizedBox(width:170),
+                      SelectableText('INSTRUCTION:\t'),
                       SelectableText(a3[1]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('ALU RESULT'),
+                      SizedBox(width:170),
+                      SelectableText('ALU RESULT:\t'),
                       SelectableText(a3[2]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('OP2'),
+                      SizedBox(width:170),
+                      SelectableText('OP2:\t'),
                       SelectableText(a3[3]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('MEMORY OP'),
+                      SizedBox(width:170),
+                      SelectableText('MEMORY OP:\t'),
                       SelectableText(a3[4]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('RESULT SELECT'),
+                      SizedBox(width:170),
+                      SelectableText('RESULT SELECT:\t'),
                       SelectableText(a3[5]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('RF WRITE'),
+                      SizedBox(width:170),
+                      SelectableText('RF WRITE:\t'),
                       SelectableText(a3[6]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('IS BRANCH'),
+                      SizedBox(width:170),
+                      SelectableText('IS BRANCH:\t'),
                       SelectableText(a3[7]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('IMMEDIATE'),
+                      SizedBox(width:170),
+                      SelectableText('IMMEDIATE:\t'),
                       SelectableText(a3[8]),
                     ],
                   ),
@@ -1513,31 +1538,36 @@ class _PipelinedState extends State<Pipelined> {
                 children: [
                   Row(
                     children: [
-                      SelectableText('PC'),
+                      SizedBox(width:170),
+                      SelectableText('PC:\t'),
                       SelectableText(a4[0]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('INSTRUCTION'),
+                      SizedBox(width:170),
+                      SelectableText('INSTRUCTION:\t'),
                       SelectableText(a4[1]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('RESULT'),
+                      SizedBox(width:170),
+                      SelectableText('RESULT:\t'),
                       SelectableText(a4[2]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('RF WRITE'),
+                      SizedBox(width:170),
+                      SelectableText('RF WRITE:\t'),
                       SelectableText(a4[3]),
                     ],
                   ),
                   Row(
                     children: [
-                      SelectableText('IS BRANCH'),
+                      SizedBox(width:170),
+                      SelectableText('IS BRANCH:\t'),
                       SelectableText(a4[4]),
                     ],
                   ),
@@ -1597,44 +1627,32 @@ class _PipelinedState extends State<Pipelined> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: () {displayStep++;setState((){});},
-                          // {
-                          //   if (!outputRan &&
-                          //       displayStep < outputLines.length) {
-                          //     displayStep++;
-                          //     displayTxt += '${outputLines[displayStep]}\n\n';
-                          //     displayOutput();
-                          //   }
-                          // },
+                          onPressed: () {
+                            if (displayStep < solver.count) {
+                              displayStep++;
+                              setState((){});
+                            }
+                          },
                           child: const Text('Step'),
                         ),
                         ElevatedButton(
-                            onPressed: () =>null,
-                            // {
-                            //   if (!outputRan) {
-                            //     outputRan = true;
-                            //     displayTxt = outputTxt;
-                            //     if (myFile != null) {
-                            //       displayStep = outputReg.length - 1;
-                            //     }
-                            //     displayOutput();
-                            //   }
-                            // },
+                            onPressed: (){
+                              displayStep=solver.count;
+                              setState(() {});
+                            },
+
                             child: const Text('Run')),
                         ElevatedButton(
                             onPressed: (){
-                              outputRan = false;
-                              // displayTxt = '${outputLines[0]}\n\n';
                               displayStep = 0;
                               setState((){});
-                              ////////////////////copy to forwarding
                             },
                             child: const Text('Reset')),
                         ElevatedButton(
                             style: ElevatedButton.styleFrom(primary:(solver.knob2)?Colors.green:Colors.redAccent),
                             onPressed: (){
                               solver.knob2=!solver.knob2;
-
+                              displayStep=0;
                               setState((){});
                             },
                             child: const Text('Forwarding'))
@@ -1658,7 +1676,7 @@ class _PipelinedState extends State<Pipelined> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.vertical,
                         child: SelectableText(
-                          solver.displayTxt,
+                          solver.showTxt(displayStep),
                           textAlign: TextAlign.left,
                           style: const TextStyle(
                             color: Colors.black,
@@ -1728,13 +1746,13 @@ class solvePipelined {
   Map<int,String> DEEX={};
   Map<int,String> EXMA={};
   Map<int,String> MAWB={};
-  String displayTxt='CYCLES ELAPSED: 0\nFETCH: EMPTY\nDECODE: EMPTY\nEXECUTE: EMPTY\nMEMORY: EMPTY\nWRITEBACK: EMPTY\n';
+  String displayTxt='CYCLES ELAPSED: 0\n\n';
   List<String> outputReg = ['0${'\t0'*31}'];
 
 
   int pc = 0,count=0,btarget=0,instructCount=0,dataCount=0,controlCount=0,stallCount=0,dataHazard=0,controlHazard=0,misPredict=0,dataStalls=0,controlStalls=0;
   bool
-      knob1=true,
+  knob1=true,
       knob2=false,
       running=true,
       isBranchtaken=false,
@@ -2261,7 +2279,7 @@ class solvePipelined {
   }
   void memory() {
     if(ex_ma[1]==0) {
-      displayTxt += "DECODE: EMPTY\n";
+      displayTxt += "MEMORY: EMPTY\n";
       return;
     }
     //pipelined//
@@ -2314,7 +2332,7 @@ class solvePipelined {
   }
   void write_back(File f) {
     if(ma_wb[1]==0) {
-      displayTxt += "DECODE: EMPTY\n";
+      displayTxt += "WRITEBACK: EMPTY\n";
       return;
     }
     displayTxt += "WRITEBACK: ";
@@ -2536,7 +2554,7 @@ class solvePipelined {
     f.writeAsStringSync("",
         mode: FileMode.write);
     while(running){
-      displayTxt+='\nCYCLES ELAPSED: ${count+1}\n';
+
       fetch();
       decode_p();
       execute();
@@ -2552,6 +2570,7 @@ class solvePipelined {
       // print(RF);
       count++;
       transfer();
+      displayTxt+='CYCLES ELAPSED: ${count}\n\n';
       outputReg.add(RF.join('\t'));
       IFDE[count]=if_de.join('\t');
       DEEX[count]=de_ex.join('\t');
@@ -2561,12 +2580,20 @@ class solvePipelined {
       // print(count.toString()+if_de.toString());
     }
   }
+  String showTxt(int step){
+    List<String> myList=displayTxt.split('\n\n');
+    String str='';
+    for(int i=0;i<step;i++){
+      str+=myList[i]+'\n\n';
+    }
+    return str;
+  }
   void solve(File inputFile,File outputFile)async {
     IFDE={};
     DEEX={};
     EXMA={};
     MAWB={};
-    displayTxt='CYCLES ELAPSED: 0\nFETCH: EMPTY\nDECODE: EMPTY\nEXECUTE: EMPTY\nMEMORY: EMPTY\nWRITEBACK: EMPTY\n';
+    displayTxt='CYCLES ELAPSED: 0\n\n';
     outputReg = ['0${'\t0'*31}'];
     pc = 0;
     count=0;
@@ -2586,18 +2613,42 @@ class solvePipelined {
     isBranchtaken=false;
     loadHazard=false;
     n=[];
-    for (var element in RF) {element=0;}
-    for (var element in b) {element=0;}
-    for (var element in im) {element=0;}
-    for (var element in t) {element=0;}
-    for (var element in if_de) {element=0;}
-    for (var element in t1) {element=0;}
-    for (var element in de_ex) {element=0;}
-    for (var element in t2) {element=0;}
-    for (var element in ex_ma) {element=0;}
-    for (var element in t3) {element=0;}
-    for (var element in ma_wb) {element=0;}
-    for (var element in t4) {element=0;}
+    for (int i=0;i<RF.length;i++){
+      RF[i]=0;
+    }
+    for (int i=0;i<b.length;i++){
+      b[i]=0;
+    }
+    for (int i=0;i<im.length;i++){
+      im[i]=0;
+    }
+    for (int i=0;i<t.length;i++){
+      t[i]=0;
+    }
+    for (int i=0;i<if_de.length;i++){
+      if_de[i]=0;
+    }
+    for (int i=0;i<t1.length;i++){
+      t1[i]=0;
+    }
+    for (int i=0;i<ex_ma.length;i++){
+      ex_ma[i]=0;
+    }
+    for (int i=0;i<t2.length;i++){
+      t2[i]=0;
+    }
+    for (int i=0;i<de_ex.length;i++){
+      de_ex[i]=0;
+    }
+    for (int i=0;i<t3.length;i++){
+      t3[i]=0;
+    }
+    for (int i=0;i<ma_wb.length;i++){
+      ma_wb[i]=0;
+    }
+    for (int i=0;i<t4.length;i++){
+      t4[i]=0;
+    }
     MEM = {};
     INS={};
     buffer=[];
@@ -2611,5 +2662,7 @@ class solvePipelined {
 
     load_progmem();
     run_riscvsim(outputFile);
+    print(outputReg);
+
   }
 }
