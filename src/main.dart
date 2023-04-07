@@ -1003,7 +1003,7 @@ class _SingleCycleState extends State<SingleCycle> {
 }
 
 class ExecutionDiagram extends StatefulWidget {
-  bool isPipelined=false;
+  bool? isPipelined;
   Function(int v)? updateDisplay;
   ExecutionDiagram({Key? key,required this.isPipelined, required this.updateDisplay});
 
