@@ -1410,8 +1410,18 @@ class _PipelinedState extends State<Pipelined> {
                               // displayTxt = '${outputLines[0]}\n\n';
                               displayStep = 0;
                               setState((){});
+                              ////////////////////copy to forwarding
                             },
                             child: const Text('Reset')),
+                        ElevatedButton(
+                            style: ElevatedButton.styleFrom(primary:(solver.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solver.knob2=!solver.knob2;
+
+                              setState((){});
+                            },
+                            child: const Text('Forwarding'))
+                        ,
                       ],
                     )),
                 const SizedBox(
