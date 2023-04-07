@@ -1012,11 +1012,18 @@ class ExecutionDiagram extends StatefulWidget {
 }
 class _ExecutionDiagramState extends State<ExecutionDiagram> {
   final ScrollController _mycontroller = new ScrollController();
+  chooseColor(int type){
+    if(type==5) return Colors.black38;
+    if(type==3) return Colors.blueGrey;
+    if(type==0) return Colors.pinkAccent;
+    if(type==2) return Colors.blueAccent;
+    return Colors.deepPurpleAccent;
 
+  }
   createBox(String text,int type, VoidCallback func, double height, double width){
     return ElevatedButton(
         onPressed: func,
-        style: ElevatedButton.styleFrom(primary:(type==5)?Colors.black38:Colors.deepPurpleAccent,minimumSize: Size(width, height)),
+        style: ElevatedButton.styleFrom(primary:chooseColor(type),minimumSize: Size(width, height)),
         child: Container(
           alignment: Alignment.center,
           child: (type==5)?RotatedBox(
@@ -1069,7 +1076,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                   const SizedBox(height: 70,),
                   createBox('PC', 1, () {return null;}, 50, 80), // PC
                   const SizedBox(height: 100,),
-                  createBox('Instruction\nMemory', 1, () {return null;}, 180, 130),
+                  createBox('Instruction\nMemory', 0, () {return null;}, 180, 130),
                 ],
               ),//Fetch
               Column(
@@ -1079,7 +1086,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                   const SizedBox(height: 100,),
                   createBox('Adder', 3, () {}, 50, 50),
                   const SizedBox(height: 120,),
-                  createBox('Sign\nExt.', 3, () { }, 160, 70),
+                  createBox('Sign\nExt.', 1, () { }, 160, 70),
                   const SizedBox(height: 30,),
                   createBox('Register\nFile', 0, () {widget.updateDisplay!(0);}, 150, 130),
                 ],
@@ -1252,7 +1259,7 @@ class _PipelinedState extends State<Pipelined> {
 
   String showDisplay(int a){
     if(a==1){
-      return solver.IFDE[displayStep]??'not fnd';
+      return solver.IFDE[displayStep]??'Empty';
     }else{
       return whatDisplay.toString();
     }
@@ -1423,7 +1430,7 @@ class solvePipelined {
   Map<int,String> IFDE={};/////////////////////////
   int pc = 0,count=0,btarget=0,instructCount=0,dataCount=0,controlCount=0,stallCount=0,dataHazard=0,controlHazard=0,misPredict=0,dataStalls=0,controlStalls=0;
   bool
-      knob1=true,
+  knob1=true,
       knob2=false,
       running=true,
       isBranchtaken=false,
