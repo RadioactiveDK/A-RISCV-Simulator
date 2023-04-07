@@ -1320,14 +1320,231 @@ class _PipelinedState extends State<Pipelined> {
   }
 
   displayPR(){
+    List<String> a1=[];
+    List<String> a2=[];
+    List<String> a3=[];
+    List<String> a4=[];
+
+    if(solver.IFDE[displayStep] !=null) a1 = solver.IFDE[displayStep]!.split('\t');
+    if(solver.DEEX[displayStep] !=null) a2 = solver.DEEX[displayStep]!.split('\t');
+    if(solver.EXMA[displayStep] !=null) a3 = solver.EXMA[displayStep]!.split('\t');
+    if(solver.EXMA[displayStep] !=null) a4 = solver.EXMA[displayStep]!.split('\t');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 400,),
-        SelectableText(solver.IFDE[displayStep]??'Empty'),
-        SelectableText(solver.DEEX[displayStep]??'Empty'),
-        SelectableText(solver.EXMA[displayStep]??'Empty'),
-        SelectableText(solver.MAWB[displayStep]??'Empty'),
+        const SizedBox(width: 400,),
+        if(whatDisplay==1)Column(
+          children:[
+            (solver.IFDE[displayStep]==null)?const SelectableText('Empty'):
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        SelectableText('PC'),
+                        SelectableText(a1[0]),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        SelectableText('INSTRUCTION'),
+                        SelectableText(a1[1]),
+                      ],
+                    ),
+                  ],
+                )
+          ]
+        ),
+        if(whatDisplay==2)Column(
+            children:[
+              (solver.IFDE[displayStep]==null)?const SelectableText('Empty'):
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      SelectableText('PC'),
+                      SelectableText(a2[0]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('INSTRUCTION'),
+                      SelectableText(a2[1]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('OP2'),
+                      SelectableText(a2[2]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('OP1'),
+                      SelectableText(a2[3]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('IMMEDIATE'),
+                      SelectableText(a2[4]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('BRANCH TARGET'),
+                      SelectableText(a2[5]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('OP2 SELECT'),
+                      SelectableText(a2[6]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('ALU OP'),
+                      SelectableText(a2[7]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('BRANCH SELECT'),
+                      SelectableText(a2[8]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('RESULT SELECT'),
+                      SelectableText(a2[9]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('MEMORY OP'),
+                      SelectableText(a2[10]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('RF WRITE'),
+                      SelectableText(a2[11]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('IS BRANCH'),
+                      SelectableText(a2[12]),
+                    ],
+                  ),
+
+                ],
+              )
+            ]
+        ),
+        if(whatDisplay==3)Column(
+            children:[
+              (solver.IFDE[displayStep]==null)?const SelectableText('Empty'):
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      SelectableText('PC'),
+                      SelectableText(a3[0]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('INSTRUCTION'),
+                      SelectableText(a3[1]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('ALU RESULT'),
+                      SelectableText(a3[2]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('OP2'),
+                      SelectableText(a3[3]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('MEMORY OP'),
+                      SelectableText(a3[4]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('RESULT SELECT'),
+                      SelectableText(a3[5]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('RF WRITE'),
+                      SelectableText(a3[6]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('IS BRANCH'),
+                      SelectableText(a3[7]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('IMMEDIATE'),
+                      SelectableText(a3[8]),
+                    ],
+                  ),
+                ],
+              )
+            ]
+        ),
+        if(whatDisplay==4)Column(
+            children:[
+              (solver.IFDE[displayStep]==null)?const SelectableText('Empty'):
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      SelectableText('PC'),
+                      SelectableText(a4[0]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('INSTRUCTION'),
+                      SelectableText(a4[1]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('RESULT'),
+                      SelectableText(a4[2]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('RF WRITE'),
+                      SelectableText(a4[3]),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      SelectableText('IS BRANCH'),
+                      SelectableText(a4[4]),
+                    ],
+                  ),
+                ],
+              )
+            ]
+        ),
       ],
     );
   }
@@ -1467,7 +1684,11 @@ class _PipelinedState extends State<Pipelined> {
                         child: Column(
                           children: [
                             Text(
-                              (whatDisplay==0)?'Register File':'Pipeline Registers',
+                              (whatDisplay==0)?'Register File':
+                              (whatDisplay==1)?'IF-DE Pipeline Registers':
+                              (whatDisplay==2)?'DE-EX Pipeline Registers':
+                              (whatDisplay==3)?'EX-MA Pipeline Registers':
+                              'MA-WB Pipeline Registers',
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 20),
                             ),
@@ -2332,10 +2553,10 @@ class solvePipelined {
       count++;
       transfer();
       outputReg.add(RF.join('\t'));
-      IFDE[count]=if_de.toString();
-      DEEX[count]=de_ex.toString();
-      EXMA[count]=ex_ma.toString();
-      MAWB[count]=ma_wb.toString();
+      IFDE[count]=if_de.join('\t');
+      DEEX[count]=de_ex.join('\t');
+      EXMA[count]=ex_ma.join('\t');
+      MAWB[count]=ma_wb.join('\t');
 
       // print(count.toString()+if_de.toString());
     }
