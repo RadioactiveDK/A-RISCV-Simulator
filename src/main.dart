@@ -690,6 +690,8 @@ class _SingleCycleState extends State<SingleCycle> {
   }
 
   void runRiscvSim(File f) {
+    f.writeAsStringSync("",
+        mode: FileMode.write);
     pc = 0;
     clock = 0;
     displayStep = 0;
@@ -777,9 +779,7 @@ class _SingleCycleState extends State<SingleCycle> {
   }
 
   void displayOutput() {
-    setState(() {
-      ;
-    });
+    setState(() {});
   }
 
   void myFilePicker() async {
@@ -1016,7 +1016,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
   createBox(String text,int type, VoidCallback func, double height, double width){
     return ElevatedButton(
         onPressed: func,
-        style: ElevatedButton.styleFrom(primary:(type==5)?Colors.black12:Colors.deepPurpleAccent,minimumSize: Size(width, height)),
+        style: ElevatedButton.styleFrom(primary:(type==5)?Colors.black38:Colors.deepPurpleAccent,minimumSize: Size(width, height)),
         child: Container(
           alignment: Alignment.center,
           child: (type==5)?RotatedBox(
@@ -1044,10 +1044,10 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
             Row(
               children: [
                 Container(height: 700,width: 200,child: const Text('Fetch',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
-                Container(height: 700,width: 200,color: Colors.white30,child: const Text('Decode',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
+                Container(height: 700,width: 200,child: const Text('Decode',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
                 Container(height: 700,width: 200,child: const Text('Execute',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
-                Container(height: 700,width: 200,color: Colors.white30,child: const Text('Memory',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
-                Container(height: 700,width: 180,child: const Text('WriteBack',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),)
+                Container(height: 700,width: 200,child: const Text('Memory',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
+                Container(height: 700,width: 180,child: const Text('Write-\nBack',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),)
               ],
             ),
           ClipRect(
@@ -1121,13 +1121,13 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
             Row(
               children: [
                 const SizedBox(width: 180,),
-                createBox('Fetch-Decode', 5, () {widget.updateDisplay!(1);}, 700, 10),
+                createBox('                     Fetch-Decode', 5, () {widget.updateDisplay!(1);}, 700, 10),
                 const SizedBox(width: 160,),
-                createBox('Decode-Execute', 5, () {widget.updateDisplay!(2);}, 700, 10),
+                createBox('                                                                                                Decode-Execute', 5, () {widget.updateDisplay!(2);}, 700, 10),
                 const SizedBox(width: 140,),
-                createBox('Execute-Memory', 5, () {widget.updateDisplay!(3);}, 700, 10),
+                createBox('Execute-Memory                                                                                                ', 5, () {widget.updateDisplay!(3);}, 700, 10),
                 const SizedBox(width: 180,),
-                createBox('Memory-WriteBack', 5, () {widget.updateDisplay!(4);}, 700, 10),
+                createBox('                                                                                 Memory-WriteBack', 5, () {widget.updateDisplay!(4);}, 700, 10),
               ],
             ),
         ]
@@ -1148,16 +1148,16 @@ class ArrowPainter extends CustomPainter {
   }
   createText(Canvas canvas,Paint paint,String txt,double size,double x,double y){
     final TextSpan textSpan = TextSpan(
-            text: txt,
-            style: TextStyle(color: Colors.black, fontSize: size),
-          );
-          final TextPainter textPainter = TextPainter(
-            text: textSpan,
-            textAlign: TextAlign.center,
-            textDirection: TextDirection.ltr,
-          );
-          textPainter.layout();
-          textPainter.paint(canvas, Offset(x,y));
+      text: txt,
+      style: TextStyle(color: Colors.black, fontSize: size),
+    );
+    final TextPainter textPainter = TextPainter(
+      text: textSpan,
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(x,y));
   }
 
   @override
@@ -1221,6 +1221,10 @@ class ArrowPainter extends CustomPainter {
   bool shouldRepaint(ArrowPainter oldDelegate) => false;
 }
 
+
+
+
+
 class Pipelined extends StatefulWidget {
   const Pipelined({Key? key}) : super(key: key);
 
@@ -1229,6 +1233,9 @@ class Pipelined extends StatefulWidget {
 }
 class _PipelinedState extends State<Pipelined> {
   int whatDisplay=0;
+  solvePipelined solver = solvePipelined();
+  int displayStep=0;
+
   void myFilePicker() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
@@ -1236,6 +1243,19 @@ class _PipelinedState extends State<Pipelined> {
     );
     if (result == null) return;
     PlatformFile myFile = result.files.single;
+    String strPath =
+        '${Directory(myFile.path!).parent.path}\\${basenameWithoutExtension(myFile.path!)}_Pipelined.txt';
+    File outputFile = File(strPath);
+    File inputFile = File(myFile.name);
+    solver.solve(inputFile, outputFile);
+  }
+
+  String showDisplay(int a){
+    if(a==1){
+      return solver.IFDE[displayStep]??'not fnd';
+    }else{
+      return whatDisplay.toString();
+    }
   }
 
   @override
@@ -1286,7 +1306,7 @@ class _PipelinedState extends State<Pipelined> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         ElevatedButton(
-                          onPressed: () =>null,
+                          onPressed: () {displayStep++;setState((){});},
                           // {
                           //   if (!outputRan &&
                           //       displayStep < outputLines.length) {
@@ -1364,8 +1384,8 @@ class _PipelinedState extends State<Pipelined> {
                         child: Column(
                           children: [
                             Text(
-                              whatDisplay.toString(),
-                              style: TextStyle(
+                              showDisplay(whatDisplay),
+                              style: const TextStyle(
                                   fontWeight: FontWeight.bold, fontSize: 20),
                             ),
                             const SizedBox(
@@ -1388,6 +1408,7 @@ class _PipelinedState extends State<Pipelined> {
   }
 }
 
+
 class BTB{
   var address;
   var branchtarget;
@@ -1399,22 +1420,10 @@ class BTB{
   }
 }
 class solvePipelined {
-
-  int
-  pc = 0,
-      count=0,
-      btarget=0,
-      instructCount=0,
-      dataCount=0,
-      controlCount=0,
-      stallCount=0,
-      dataHazard=0,
-      controlHazard=0,
-      misPredict=0,
-      dataStalls=0,
-      controlStalls=0;
+  Map<int,String> IFDE={};/////////////////////////
+  int pc = 0,count=0,btarget=0,instructCount=0,dataCount=0,controlCount=0,stallCount=0,dataHazard=0,controlHazard=0,misPredict=0,dataStalls=0,controlStalls=0;
   bool
-  knob1=true,
+      knob1=true,
       knob2=false,
       running=true,
       isBranchtaken=false,
@@ -1438,6 +1447,7 @@ class solvePipelined {
 
   void dec2bin(int value) {
     if (value < 0) value = (1 << 32) + value;
+
     for (int i = 0; i < 32; i++) {
       t[i] = 0;
     }
@@ -1451,14 +1461,14 @@ class solvePipelined {
     }
   }
   int comp2() {
+
     int c = t[31];
     if (c == 1) {
       for (int i = 0; i <= 31; i++) {
-        if (t[i] == 1) {
+        if (t[i] == 1)
           t[i] = 0;
-        } else {
+        else
           t[i] = 1;
-        }
       }
       int i = 0;
       while (i <= 31 && t[i] == 1) {
@@ -1545,8 +1555,7 @@ class solvePipelined {
   }
 
   void fetch() {
-    t1[0]=pc;
-    t1[1]=INS[pc]??0;
+    t1[0]=pc;t1[1]=INS[pc]??0;
   }
   void decode_p(){
     //0,1,2,3,4,6,7,9,10,11
@@ -1826,7 +1835,6 @@ class solvePipelined {
       else buffer[index].branchtaken=false;
     }
     isBranchtaken=false;
-
   }
   void memory() {
     //pipelined//
@@ -1947,8 +1955,6 @@ class solvePipelined {
   void swi_exit(File f) {
     write_datamemory(f);
     running = false;
-
-    exit(0);
   }
   void write_datamemory(File myOutFile) {
     var sortedINS = Map.fromEntries(
@@ -2001,7 +2007,7 @@ class solvePipelined {
     myOutFile.writeAsStringSync("\nData hazards count:  ${dataHazard}\nControl hazards count:  ${controlHazard}\nBranch mispredictions count:  ${misPredict}", mode: FileMode.append);
     myOutFile.writeAsStringSync("\nNumber of stalls due to data hazards:  ${dataStalls}\nNumber of stalls due to control hazards:  ${controlStalls}.", mode: FileMode.append);
   }
-  bool src1Hazard(int write,int read){
+  bool src1Hazard(int write,int read) {
     int opcode1=write&0x7F,opcode2=read&0x7F;
     if(opcode1==35 || opcode1==99 || opcode1==0 || write==19){return false;}
     if(opcode2==111 || opcode2==55 || opcode2==23 || read==19){return false;}
@@ -2009,7 +2015,7 @@ class solvePipelined {
     if((src1!=0) && (src1 == dest)){return true;}
     return false;
   }
-  bool src2Hazard(int write,int read){
+  bool src2Hazard(int write,int read) {
     bool hasrs2=false;
     int opcode1=write&0x7F,opcode2=read&0x7F;
     if(opcode1==35 || opcode1==99 || opcode1==0 || write==19){return false;}
@@ -2019,7 +2025,7 @@ class solvePipelined {
     if(hasrs2==true &&(src2!=0) && (src2 == dest)){return true;}
     return false;
   }
-  bool hazardDetect(int instruction){
+  bool hazardDetect(int instruction) {
     int opcode=instruction&0x7F;
     bool hasrs1=true,hasrs2=false;
     if(opcode==35 || opcode==99 || opcode==0 || instruction==19){return false;}
@@ -2030,25 +2036,8 @@ class solvePipelined {
     else if(hasrs2==true &&(src2!=0) && (src2 == dest)){return true;}
     return false;
   }
-  void run_riscvsim(File f){
-    while(running){
-      fetch();
-      decode_p();
-      execute();
-      memory();
-      write_back(f);
-      // print("**************************");
-      // print(pc);
-      // print(if_de);
-      // print(de_ex);
-      // print(ex_ma);
-      // print(ma_wb);
-      // print(RF);
-      count++;
-      transfer();
-    }
-  }
-  void load_progmem(){
+
+  void load_progmem() {
     for(int i=0;i<n.length;i++)
     {
       String s=n[i];
@@ -2088,13 +2077,72 @@ class solvePipelined {
         INS[address]=instruct;
     }
   }
+  void run_riscvsim(File f)async{
+    f.writeAsStringSync("",
+        mode: FileMode.write);
+    while(running){
+      fetch();
+      decode_p();
+      execute();
+      memory();
+      write_back(f);
+      // print("**************************");
+      // print(pc);
+      // print(if_de);
+      // print(de_ex);
+      // print(ex_ma);
+      // print(ma_wb);
+      // print(RF);
+      count++;
+      transfer();
+      IFDE[count]=if_de.toString();
+      // print(count.toString()+if_de.toString());
+    }
+  }
 
-  void solve(File inputFile,File outputFile) {
-    List<String> s=inputFile.readAsLinesSync();
-    for(int i=0;i<s.length;i++)
-    {n.add(s[i]);}
+  void solve(File inputFile,File outputFile)async {
+    pc = 0;
+    count=0;
+    btarget=0;
+    instructCount=0;
+    dataCount=0;
+    controlCount=0;
+    stallCount=0;
+    dataHazard=0;
+    controlHazard=0;
+    misPredict=0;
+    dataStalls=0;
+    controlStalls=0;
+
+    knob1=true;
+    knob2=false;
+    running=true;
+    isBranchtaken=false;
+    loadHazard=false;
+    n=[];
+    for (var element in RF) {element=0;}
+    for (var element in b) {element=0;}
+    for (var element in im) {element=0;}
+    for (var element in t) {element=0;}
+    for (var element in if_de) {element=0;}
+    for (var element in t1) {element=0;}
+    for (var element in de_ex) {element=0;}
+    for (var element in t2) {element=0;}
+    for (var element in ex_ma) {element=0;}
+    for (var element in t3) {element=0;}
+    for (var element in ma_wb) {element=0;}
+    for (var element in t4) {element=0;}
+    MEM = {};
+    INS={};
+    buffer=[];
+
+    List<String> s = inputFile.readAsLinesSync();
+    for(int i=0;i<s.length;i++) {
+      n.add(s[i]);
+    }
     RF[2]=2147483644;
     buffer.add(new BTB(-1,-1,false));
+
     load_progmem();
     run_riscvsim(outputFile);
   }
