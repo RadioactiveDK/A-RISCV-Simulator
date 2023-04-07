@@ -233,7 +233,7 @@ class _SingleCycleState extends State<SingleCycle> {
 
   void fetch(File f) {
     int mcode = MEM[pc] ?? 0;
-    if (mcode == 0 || mcode == -285212655) {
+    if (mcode == 0 || mcode == 1) {
       swi_exit(f);
     } else {
       dec2bin(mcode);
@@ -1441,7 +1441,7 @@ class _PipelinedState extends State<Pipelined> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.vertical,
                         child: SelectableText(
-                          'displayTxt',
+                          solver.displayTxt,
                           textAlign: TextAlign.left,
                           style: const TextStyle(
                             color: Colors.black,
@@ -1503,12 +1503,13 @@ class BTB{
   }
 }
 class solvePipelined {
-  Map<int,String> IFDE={};///////////////////////// re-initiate
+  Map<int,String> IFDE={};
   Map<int,String> DEEX={};
   Map<int,String> EXMA={};
   Map<int,String> MAWB={};
-
+  String displayTxt='CYCLES ELAPSED: 0\nFETCH: EMPTY\nDECODE: EMPTY\nEXECUTE: EMPTY\nMEMORY: EMPTY\nWRITEBACK: EMPTY\n';
   List<String> outputReg = ['0${'\t0'*31}'];
+
 
   int pc = 0,count=0,btarget=0,instructCount=0,dataCount=0,controlCount=0,stallCount=0,dataHazard=0,controlHazard=0,misPredict=0,dataStalls=0,controlStalls=0;
   bool
@@ -1645,19 +1646,27 @@ class solvePipelined {
 
   void fetch() {
     t1[0]=pc;t1[1]=INS[pc]??0;
+    displayTxt +='FETCH: Read instruction from address 0x${pc.toRadixString(16)}.\n';
   }
   void decode_p(){
+    if(if_de[1]==0) {
+      displayTxt += "DECODE: EMPTY\n";
+      return;
+    }
     //0,1,2,3,4,6,7,9,10,11
     t2[0]=if_de[0];t2[1]=if_de[1];
     t2[2]=RF[(t2[1]>>20)&0x1F];
     t2[3]=RF[(t2[1]>>15)&0x1F];
+    //display
+    displayTxt += "DECODE: ";
+    if(if_de[1]&0x7F==99 ||if_de[1]&0x7F == 111 || if_de[1]&0x7F==103)displayTxt += "\nControl Hazard detected at instruction ${(if_de[0]/4).toInt()}\n";
     if(knob2==true){
       //forwarding:
-      if(src1Hazard(ma_wb[1],if_de[1])){t2[3]=ma_wb[2];}
-      if(src2Hazard(ma_wb[1],if_de[1])){t2[2]=ma_wb[2];}
+      if(src1Hazard(ma_wb[1],if_de[1])){t2[3]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-DE forwarding used.\n";}
+      if(src2Hazard(ma_wb[1],if_de[1])){t2[2]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-DE forwarding used.\n";}
       //load-use hazard
-      if(src2Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;}
-      if(src1Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;}
+      if(src2Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;displayTxt+="\nLoad Hazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(de_ex[0]/4).toInt()}(Execute) and no forwarding used.\n";}
+      if(src1Hazard(de_ex[1],if_de[1]) && de_ex[1]&0x7F==3){loadHazard=true;displayTxt+="\nLoad Hazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(de_ex[0]/4).toInt()}(Execute) and no forwarding used.\n";}
     }
 
     //immediate
@@ -1767,8 +1776,94 @@ class solvePipelined {
         t2[7] = 6; //srl
       else if(t2[1]>>12&0x7==2)t2[7]=8;
     }
+
+    if(!(if_de[0]==0 && if_de[1]==19 )){displayTxt += "Instruction number ${(if_de[0]/4).toInt()}, ";}
+    displayTxt += "Operation is ";
+    if(if_de[0]==0 && if_de[1]==19){
+      displayTxt+="NOP/bubble instruction\n";
+    }
+    else if (if_de[1]&0x7F == 51) {
+      if ((if_de[1]>>12)&0x7 == 0) {
+        if ((if_de[1]>>25)&0x7F == 0) {
+          displayTxt += "ADD, ";
+        } else
+          displayTxt += "SUB, ";
+      } else if ((if_de[1]>>12)&0x7 == 7)
+        displayTxt += "AND, ";
+      else if ((if_de[1]>>12)&0x7 == 6)
+        displayTxt += "OR, ";
+      else if ((if_de[1]>>12)&0x7 == 4)
+        displayTxt += "XOR, ";
+      else if ((if_de[1]>>12)&0x7 == 1)
+        displayTxt += "SLL, ";
+      else if ((if_de[1]>>12)&0x7 == 2)
+        displayTxt += "SLT, ";
+      else if ((if_de[1]>>12)&0x7 == 5) {
+        if ((if_de[1]>>25)&0x7F == 0) {
+          displayTxt += "SRL, ";
+        } else
+          displayTxt += "SRA, ";
+      }
+      displayTxt +=
+      "rs1 is x${(if_de[1]>>15)&0x1F}, rs2 is x${(if_de[1]>>20)&0x1F} and destination register is x${(if_de[1]>>7)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 19) {
+      if ((if_de[1]>>12)&0x7 == 0) {
+        displayTxt += "ADDI, ";
+      } else if ((if_de[1]>>12)&0x7 == 6) {
+        displayTxt += "ORI, ";
+      } else if ((if_de[1]>>12)&0x7 == 7) {
+        displayTxt += "ANDI, ";
+      }
+      displayTxt +=
+      "rs1 is x${(if_de[1]>>15)&0x1F}, immediate is ${t2[4]} and destination register is x${(if_de[1]>>7)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 3) {
+      if ((if_de[1]>>12)&0x7 == 0) {
+        displayTxt += "LB, ";
+      } else if ((if_de[1]>>12)&0x7 == 1) {
+        displayTxt += "LH, ";
+      } else if ((if_de[1]>>12)&0x7 == 2) {
+        displayTxt += "LW, ";
+      }
+      displayTxt +=
+      "rs1 is x${(if_de[1]>>15)&0x1F}, immediate is ${t2[4]} and destination register is x${(if_de[1]>>7)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 103) {
+      displayTxt +=
+      "JALR, rs1 is x${(if_de[1]>>15)&0x1F}, immediate is ${t2[4]} and destination register is x${(if_de[1]>>7)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 35) {
+      if ((if_de[1]>>12)&0x7 == 0) {
+        displayTxt += "SB, ";
+      } else if ((if_de[1]>>12)&0x7 == 1) {
+        displayTxt += "SH, ";
+      } else if ((if_de[1]>>12)&0x7 == 2) {
+        displayTxt += "SW, ";
+      }
+      displayTxt +=
+      "rs1 is x${(if_de[1]>>15)&0x1F}, immediate is ${t2[4]} and rs2 is x${(if_de[1]>>20)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 99) {
+      if ((if_de[1]>>12)&0x7 == 0) {
+        displayTxt += "BEQ, ";
+      } else if ((if_de[1]>>12)&0x7 == 1) {
+        displayTxt += "BNE, ";
+      } else if ((if_de[1]>>12)&0x7 == 4) {
+        displayTxt += "BLT, ";
+      } else if ((if_de[1]>>12)&0x7 == 5) {
+        displayTxt += "BGE, ";
+      }
+      displayTxt +=
+      "rs1 is x${(if_de[1]>>15)&0x1F}, immediate is ${t2[4]} and rs2 is x${(if_de[1]>>20)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 111) {
+      displayTxt += "JAL, immediate is ${t2[4]} and rd is x${(if_de[1]>>7)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 55) {
+      displayTxt += "LUI, immediate is ${t2[4]} and rd is x${(if_de[1]>>7)&0x1F}.\n";
+    } else if (if_de[1]&0x7F == 23) {
+      displayTxt += "AUIPC, immediate is ${t2[4]} and rd is x${(if_de[1]>>7)&0x1F}.\n";
+    }
   }
   void execute() {
+    if(de_ex[1]==0) {
+      displayTxt += "EXECUTE: EMPTY\n";
+      return;
+    }
     //0,1,3,4,5,6,7,8
     //////////////////////pipelined////////////////////////////////////////
     t3[0]=de_ex[0];
@@ -1780,11 +1875,15 @@ class solvePipelined {
     t3[7]=de_ex[12];
     t3[8]=de_ex[4];
 
+    displayTxt += "EXECUTE: ";
+    if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${(de_ex[0]/4).toInt()}, ";}
+    if(de_ex[0]==0 && de_ex[1]==19)displayTxt+="NOP/BUBBLE instruction  ";
     int temp = de_ex[2];
     int op1=de_ex[3];
     if(knob2==true){
       //forwarding:
       if(src1Hazard(ex_ma[1],de_ex[1]) && ex_ma[1]&0x7F!=3){
+        displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ex_ma[0]/4).toInt()}(Memory) and MA-EX forwarding used.\n";
         if(ex_ma[5]==0){
           op1=ex_ma[2];
         }
@@ -1797,10 +1896,11 @@ class solvePipelined {
         else if(ex_ma[5]==4){
           op1=ex_ma[8];
         }}
-      else if(src1Hazard(ma_wb[1],de_ex[1])){op1=ma_wb[2];}
+      else if(src1Hazard(ma_wb[1],de_ex[1])){op1=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-EX forwarding used.\n";}
 
 
       if(src2Hazard(ex_ma[1],de_ex[1]) && ex_ma[1]&0x7F!=3){
+        displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ex_ma[0]/4).toInt()}(Memory) and MA-EX forwarding used.\n";
         if(ex_ma[5]==0){
           temp=ex_ma[2];t3[3]=ex_ma[2];
         }
@@ -1813,7 +1913,7 @@ class solvePipelined {
         else if(ex_ma[5]==4){
           temp=ex_ma[8];t3[3]=ex_ma[8];
         }}
-      else if(src2Hazard(ma_wb[1],de_ex[1])){temp=ma_wb[2];t3[3]=ma_wb[2];}
+      else if(src2Hazard(ma_wb[1],de_ex[1])){temp=ma_wb[2];t3[3]=ma_wb[2];displayTxt+="\nHazard detected between instructions number ${(de_ex[0]/4).toInt()}(Execute) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-EX forwarding used.\n";}
       //forwarding stopped
     }
 
@@ -1821,6 +1921,7 @@ class solvePipelined {
     switch (de_ex[7]) {
       case 0:
         {
+          displayTxt += "ADD ${op1} and ${temp}.\n";
           t3[2] = temp + op1;
           if(t3[2]>2147483647){t3[2]=-2147483648+(t3[2]-2147483648);}
           else if(t3[2]< -2147483648){t3[2]=2147483647+(2147483649+t3[2]);}
@@ -1829,6 +1930,7 @@ class solvePipelined {
 
       case 1:
         {
+          displayTxt += "SUBTRACT ${temp} from ${op1}.\n";
           t3[2] = op1 - temp;
           if(t3[2]>2147483647){t3[2]=-2147483648+(t3[2]-2147483648);}
           else if(t3[2]< -2147483648){t3[2]=2147483647+(2147483649+t3[2]);}
@@ -1837,24 +1939,28 @@ class solvePipelined {
 
       case 2:
         {
+          displayTxt += "LOGICAL 'AND' of ${op1} and ${temp}.\n";
           t3[2] = op1 & temp;
         }
         break;
 
       case 3:
         {
+          displayTxt += "LOGICAL 'OR' of ${op1} and ${temp}.\n";
           t3[2] = op1 | temp;
         }
         break;
 
       case 4:
         {
+          displayTxt += "LOGICAL 'XOR' of ${op1} and ${temp}.\n";
           t3[2] = op1 ^ temp;
         }
         break;
 
       case 5:
         {
+          displayTxt += "SHIFT left ${op1} ${temp} times.\n";
           t3[2]=op1;
           for(int i=0;i<temp;i++){
             t3[2]=t3[2]<<1;
@@ -1865,6 +1971,7 @@ class solvePipelined {
     //list use for srl
       case 6:
         {
+          displayTxt += "LOGICAL SHIFT right ${op1} ${temp} times.\n";
           dec2bin(op1);
           int i = 0;
           for (; i <= 31 - temp && i<=31; i++) {
@@ -1880,12 +1987,14 @@ class solvePipelined {
 
       case 7:
         {
+          displayTxt += "ARITHMETIC SHIFT right ${op1} ${temp} times.\n";
           t3[2] = op1 >> temp;
         }
         break;
 
       case 8:
         {
+          displayTxt += "SET less than ${op1} ${temp} times.\n";
           if(op1<temp)t3[2]=1;
           else t3[2]=0;
         }break;
@@ -1909,11 +2018,14 @@ class solvePipelined {
         if(buffer[i].address==de_ex[0]){flag=true;index=i;break;}
       }
       //adding to buffer
+      displayTxt+="\nBranch predictor used for instruction ${(de_ex[0]).toInt()} ";
       if(flag==false){
         var block=new BTB(de_ex[0],btarget,false);
         if(de_ex[1]&0x7F==111 || de_ex[1]&0x7F==103)block.branchtaken=true;
         buffer.add(block);
         index=buffer.length-1;
+        if(block.branchtaken==true)displayTxt+="and branch taken.\n";
+        else displayTxt+="and no branch taken.\n";
       }
     }
     ////////branch target remaining////////////
@@ -1924,8 +2036,13 @@ class solvePipelined {
       else buffer[index].branchtaken=false;
     }
     isBranchtaken=false;
+
   }
   void memory() {
+    if(ex_ma[1]==0) {
+      displayTxt += "DECODE: EMPTY\n";
+      return;
+    }
     //pipelined//
     if(knob1==true){
       t4[0]=ex_ma[0];t4[1]=ex_ma[1];t4[3]=ex_ma[6];t4[4]=ex_ma[7];
@@ -1934,8 +2051,13 @@ class solvePipelined {
       for (int i = 0; i < 32; i++) {
         t[i] = 0;
       }
+      displayTxt += "MEMORY: ";
+      if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${(ex_ma[0]/4).toInt()}, ";}
       if (ex_ma[4] == 0) {
-
+        if (ex_ma[1]&0x7F == 3)displayTxt += "Load from address 0x${ex_ma[2].toRadixString(16)}.\n";
+        else{
+          displayTxt += "No memory operation.\n";
+        }
         if ((ex_ma[1]>>12)&0x3 == 0) {
           t4[2]=lb(Eaddress, index);
         } else if ((ex_ma[1]>>12)&0x3 == 1) {
@@ -1944,6 +2066,7 @@ class solvePipelined {
           t4[2]=lw(Eaddress);
         }
       } else if(ex_ma[4]==1) {
+        displayTxt += "Store at address 0x${ex_ma[2].toRadixString(16)}.\n";
         if ((ex_ma[1]>>12)&0x3 == 0) {
           sb(Eaddress, index);
         } else if ((ex_ma[1]>>12)&0x3 == 1) {
@@ -1952,7 +2075,7 @@ class solvePipelined {
           sw(Eaddress);
         }
       }
-
+      if(ex_ma[1]==19 && ex_ma[0]==0){displayTxt+="NOP/BUBBLE instruction.\n";}
       if(ex_ma[5]==0){
         t4[2]=ex_ma[2];
       }
@@ -1966,12 +2089,22 @@ class solvePipelined {
         t4[2]=ex_ma[8];
       }
     }
+    if(src2Hazard(ma_wb[1], ex_ma[1]) && knob2==true)displayTxt+="\nHazard detected between instructions number ${(ex_ma[0]/4).toInt()}(Memory) and ${(ma_wb[0]/4).toInt()}(Writeback) and WB-MA forwarding used.\n";
   }
   void write_back(File f) {
-
-    if( ma_wb[3]==1  &&   ((ma_wb[1]>>7)&0x1F)!=0 ){
-      RF[(ma_wb[1]>>7)&0x1F]=ma_wb[2];
+    if(ma_wb[1]==0) {
+      displayTxt += "DECODE: EMPTY\n";
+      return;
     }
+    displayTxt += "WRITEBACK: ";
+    if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${(ma_wb[0]/4).toInt()}, ";}
+    if( ma_wb[3]==1  &&   ((ma_wb[1]>>7)&0x1F)!=0 ){
+      displayTxt += "Write to x${(ma_wb[1]>>7)&0x1F}.\n ";
+      RF[(ma_wb[1]>>7)&0x1F]=ma_wb[2];
+    }else{
+      displayTxt += "No writeback.\n";
+    }
+    if(ma_wb[0]==0 && ma_wb[1]==19){displayTxt+="NOP/BUBBLE instruction.\n";}
     if(ma_wb[1]==1 ){swi_exit(f);}
     //stats
     if(!((ma_wb[1]==19 && ma_wb[3]==0) || ma_wb[1]==0)){instructCount++;}
@@ -1979,7 +2112,6 @@ class solvePipelined {
     if(ma_wb[1]&0x7F==99 || ma_wb[1]&0x7F == 111 || ma_wb[1]&0x7F==103){controlCount++;}
     if(ma_wb[1]&0x7F==99){controlHazard++;}
   }
-
   void transfer() {
     ////data forwarding////
     if(knob2==true){
@@ -1992,17 +2124,23 @@ class solvePipelined {
           misPredict++;
         }
         else {
+          //display
+          bool check=false;
+          int progControl=pc;
           pc=pc+4;
           for(int i=0;i<buffer.length;i++){
-            if(buffer[i].address ==  (pc-4) && buffer[i].branchtaken==true){pc=buffer[i].branchtarget;}
+            if(buffer[i].address ==  (pc-4) && buffer[i].branchtaken==true){pc=buffer[i].branchtarget;check=true;}
           }
           //if to de//
           if_de[0]=t1[0];if_de[1]=t1[1];
           //de to ex//
           for(int i=0;i<13;i++){de_ex[i]=t2[i];}
+          if(check==true)displayTxt+="\nBranch predictor used for instruction ${(progControl/4).toInt()} and branch taken.\n";
+          else displayTxt+="\nBranch predictor used for instruction ${(progControl/4).toInt()} and branch not taken.\n";
         }
       }
       else{
+
         de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}loadHazard=false;
         stallCount++;dataStalls++;dataHazard++;}
     }
@@ -2015,6 +2153,8 @@ class solvePipelined {
         misPredict++;
       }
       else {
+
+
         if(hazardDetect(de_ex[1])==false && hazardDetect(ex_ma[1])==false && hazardDetect(ma_wb[1])==false){
           pc=pc+4;
           for(int i=0;i<buffer.length;i++){
@@ -2026,6 +2166,10 @@ class solvePipelined {
           for(int i=0;i<13;i++){de_ex[i]=t2[i];}
         }
         else{
+          //hazard print
+          if(hazardDetect(de_ex[1])==true)displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(de_ex[0]/4).toInt()}(Execute).\n";
+          else if(hazardDetect(ex_ma[1])==true)displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ex_ma[0]/4).toInt()}(Memory).\n";
+          else if(hazardDetect(ma_wb[1])==true)displayTxt+="\nHazard detected between instructions number ${(if_de[0]/4).toInt()}(Decode) and ${(ma_wb[0]/4).toInt()}(Writeback).\n";
           de_ex[0]=0;de_ex[1]=19;for(int i=2;i<13;i++){de_ex[i]=0;}
           stallCount++;
           dataHazard++;
@@ -2041,6 +2185,7 @@ class solvePipelined {
     for(int i=0;i<13;i++){t2[i]=0;}
     t1[0]=0;t1[1]=0;
   }
+
   void swi_exit(File f) {
     write_datamemory(f);
     running = false;
@@ -2170,6 +2315,7 @@ class solvePipelined {
     f.writeAsStringSync("",
         mode: FileMode.write);
     while(running){
+      displayTxt+='\nCYCLES ELAPSED: ${count+1}\n';
       fetch();
       decode_p();
       execute();
@@ -2194,8 +2340,13 @@ class solvePipelined {
       // print(count.toString()+if_de.toString());
     }
   }
-
   void solve(File inputFile,File outputFile)async {
+    IFDE={};
+    DEEX={};
+    EXMA={};
+    MAWB={};
+    displayTxt='CYCLES ELAPSED: 0\nFETCH: EMPTY\nDECODE: EMPTY\nEXECUTE: EMPTY\nMEMORY: EMPTY\nWRITEBACK: EMPTY\n';
+    outputReg = ['0${'\t0'*31}'];
     pc = 0;
     count=0;
     btarget=0;
@@ -2210,7 +2361,6 @@ class solvePipelined {
     controlStalls=0;
 
     knob1=true;
-    knob2=false;
     running=true;
     isBranchtaken=false;
     loadHazard=false;
@@ -2241,5 +2391,4 @@ class solvePipelined {
     load_progmem();
     run_riscvsim(outputFile);
   }
-
 }
