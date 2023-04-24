@@ -3788,7 +3788,7 @@ class solvePipelinedWithCaches {
       }
       displayTxt += "MEMORY: ";
       if(!(if_de[0]==0 && if_de[1]==19)){displayTxt += "Instruction number ${(ex_ma[0]/4).toInt()}, ";}
-      if (ex_ma[4] == 0) {
+      if (ex_ma[4] == 0 && ex_ma[4]&0x7F==3) {
         if (ex_ma[1]&0x7F == 3)displayTxt += "Load from address 0x${ex_ma[2].toRadixString(16)}.\n";
         else{
           displayTxt += "No memory operation.\n";
