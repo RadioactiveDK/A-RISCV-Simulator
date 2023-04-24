@@ -3225,21 +3225,21 @@ class solvePipelinedWithCaches {
       size = 64,
       stop=0,
       instructCount=0,
-  dataCount=0,
-  controlCount=0,
-  stallCount=0,
-  dataHazard=0,
-  controlHazard=0,
-  misPredict=0,
-  dataStalls=0,
-  controlStalls=0;
+      dataCount=0,
+      controlCount=0,
+      stallCount=0,
+      dataHazard=0,
+      controlHazard=0,
+      misPredict=0,
+      dataStalls=0,
+      controlStalls=0;
   static Set<int> INScold={};
   static Set<int> MEMcold={};
   static Set<int> INSconflict={};
   static Set<int> MEMconflict={};
   static int pc = 0,count=0,btarget=0;
   static bool
-      knob1=true,
+  knob1=true,
       knob2=true,
       running=true,
       isBranchtaken=false,
@@ -3922,6 +3922,8 @@ class solvePipelinedWithCaches {
   }
 
   static void swi_exit(File f) {
+    print(datacache.misses);
+
     write_datamemory(f);
     running = false;
   }
@@ -4050,23 +4052,29 @@ class solvePipelinedWithCaches {
     f.writeAsStringSync("",
         mode: FileMode.write);
     while(running){
-
-      print(inscache.cache);/////
-      print(INScold);
-
+      print(count);
       fetch();
+      // if(stop>0){
+      //   while(stop>0){
+      //     stop--;
+      //     count++;
+      //     displayTxt+='Cache Miss Stall\nCYCLES ELAPSED: ${count}\n\n';
+      //   }
+      //   continue;
+      // }
       decode_p();
       execute();
       memory();
+      // if(stop>0){
+      //   while(stop>0){
+      //     stop--;
+      //     count++;
+      //     displayTxt+='Cache Miss Stall\nCYCLES ELAPSED: ${count}\n\n';
+      //   }
+      //   continue;
+      // }
       write_back(f);
 
-      // print("**************************");
-      // print(pc);
-      // print(if_de);
-      // print(de_ex);
-      // print(ex_ma);
-      // print(ma_wb);
-      // print(RF);
       count++;
       transfer();
       displayTxt+='CYCLES ELAPSED: ${count}\n\n';
