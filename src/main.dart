@@ -2341,14 +2341,6 @@ class solvePipelined {
       execute();
       memory();
       write_back(f);
-
-      // print("**************************");
-      // print(pc);
-      // print(if_de);
-      // print(de_ex);
-      // print(ex_ma);
-      // print(ma_wb);
-      // print(RF);
       count++;
       transfer();
       displayTxt+='CYCLES ELAPSED: ${count}\n\n';
@@ -2871,6 +2863,7 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
                         ElevatedButton(
                             onPressed: (){
                               displayStep=solvePipelinedWithCaches.count;
+
                               setState(() {});
                             },
 
@@ -2909,7 +2902,7 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.vertical,
                         child: SelectableText(
-                          (displayStep==solvePipelinedWithCaches.count)?solvePipelinedWithCaches.displayTxt:solvePipelinedWithCaches.showTxt(displayStep),
+                          (displayStep==solvePipelinedWithCaches.count)?(solvePipelinedWithCaches.displayTxt):(solvePipelinedWithCaches.showTxt(displayStep)),
                           textAlign: TextAlign.left,
                           style: const TextStyle(
                             color: Colors.black,
@@ -4058,6 +4051,11 @@ class solvePipelinedWithCaches {
         while(stop>0){
           stop--;
           count++;
+          outputReg.add(RF.join('\t'));
+          IFDE[count]=if_de.join('\t');
+          DEEX[count]=de_ex.join('\t');
+          EXMA[count]=ex_ma.join('\t');
+          MAWB[count]=ma_wb.join('\t');
           displayTxt+='Cache Miss Stall\nCYCLES ELAPSED: ${count}\n\n';
         }
         continue;
@@ -4069,6 +4067,11 @@ class solvePipelinedWithCaches {
         while(stop>0){
           stop--;
           count++;
+          outputReg.add(RF.join('\t'));
+          IFDE[count]=if_de.join('\t');
+          DEEX[count]=de_ex.join('\t');
+          EXMA[count]=ex_ma.join('\t');
+          MAWB[count]=ma_wb.join('\t');
           displayTxt+='Cache Miss Stall\nCYCLES ELAPSED: ${count}\n\n';
         }
         continue;
@@ -4084,12 +4087,12 @@ class solvePipelinedWithCaches {
       EXMA[count]=ex_ma.join('\t');
       MAWB[count]=ma_wb.join('\t');
 
-      // print(count.toString()+if_de.toString());
     }
   }
 
   static String showTxt(int step){
     List<String> myList=displayTxt.split('\n\n');
+    print(myList.length);
     String str='';
     for(int i=0;i<step;i++){
       str+=myList[i]+'\n\n';
