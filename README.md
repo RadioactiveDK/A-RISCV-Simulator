@@ -1,7 +1,7 @@
 # RISCV-32I Simulator
 Table of contents
 - Directory Structure
-- How to Execute
+- How to Run the Application
   
 ## Directory Structure
 ### Release
@@ -14,7 +14,7 @@ Table of contents
 ### test
 - includes three `.mc` files for testing
 
-## How to execute
+## How to Run the Application
 1. Install the `Release` folder and run `arch.exe` after extracting.
 2. Choose the type of execution.
 3. Select a `.mc` file.
