@@ -1,8 +1,10 @@
 # RISCV-32I Simulator
+```
 Table of contents
 - Directory Structure
 - How to Run the Application
-  
+```
+
 ## Directory Structure
 ### Release
 - includes  the assets and `.exe` file to run the program
