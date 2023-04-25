@@ -2886,6 +2886,62 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
                       ],
                     )),
                 const SizedBox(
+                  height: 5,
+                ),
+                if(myFile != null)Container(
+                    width: 500,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        ElevatedButton(
+                          //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.col *= 2;
+                              if(solvePipelinedWithCaches.col == 32) solvePipelinedWithCaches.col = 1;
+                              solvePipelinedWithCaches.size=(solvePipelinedWithCaches.row*solvePipelinedWithCaches.col);
+                              setState((){});
+                            },
+                            child: Text('${solvePipelinedWithCaches.col} word block')),
+                        ElevatedButton(
+                          //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.row *= 2;
+                              if(solvePipelinedWithCaches.row == 16) solvePipelinedWithCaches.row = 1;
+                              solvePipelinedWithCaches.size=(solvePipelinedWithCaches.row*solvePipelinedWithCaches.col);
+                              setState((){});
+                            },
+                            child: Text('${solvePipelinedWithCaches.row*solvePipelinedWithCaches.col} word \$')),
+                        ElevatedButton(
+                            //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.datacache.mapping=(solvePipelinedWithCaches.datacache.mapping+1)%3;
+                              setState((){});
+                            },
+                            child: Text((solvePipelinedWithCaches.datacache.mapping==0)?'Direct Map':
+                                        (solvePipelinedWithCaches.datacache.mapping==1)?'Fully Assoc.':
+                                         'Set Assoc.')
+                        ),
+                        if(solvePipelinedWithCaches.datacache.mapping == 2)ElevatedButton(
+                          //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.datacache.way *= 2;
+                              if(solvePipelinedWithCaches.datacache.way == 32) solvePipelinedWithCaches.datacache.way = 2;
+                              setState((){});
+                            },
+                            child: Text('${solvePipelinedWithCaches.datacache.way} - way')),
+                        if(solvePipelinedWithCaches.datacache.mapping != 0)ElevatedButton(
+                          //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.datacache.policy=(solvePipelinedWithCaches.datacache.policy+1)%3;
+                              setState((){});
+                            },
+                            child: Text((solvePipelinedWithCaches.datacache.policy==0)?'Random':
+                            (solvePipelinedWithCaches.datacache.policy==1)?'LRU':
+                            'FIFO')),
+                      ],
+                    )
+                ),
+                const SizedBox(
                   height: 10,
                 ),
                 Expanded(
