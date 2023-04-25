@@ -1006,7 +1006,7 @@ class _SingleCycleState extends State<SingleCycle> {
               ],
             ),
             const SizedBox(width: 15),
-            ExecutionDiagram(isPipelined: false,updateDisplay: (int v){},)
+            ExecutionDiagram(isPipelined: 0,updateDisplay: (int v){},)
           ],
         ),
       ),
@@ -1505,7 +1505,7 @@ class _PipelinedState extends State<Pipelined> {
               ],
             ),
             const SizedBox(width: 15),
-            ExecutionDiagram(isPipelined: true,updateDisplay: (int v){whatDisplay=v;setState(() {});},)
+            ExecutionDiagram(isPipelined: 1,updateDisplay: (int v){whatDisplay=v;setState(() {});},)
           ],
         ),
       ),
@@ -2813,7 +2813,7 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
             Navigator.of(context).pop();
           },
         ),
-        title: const Text('Pipelined Execution'),
+        title: const Text('Pipelined Execution With Caches'),
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.file_open),
@@ -2948,7 +2948,7 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
               ],
             ),
             const SizedBox(width: 15),
-            ExecutionDiagram(isPipelined: true,updateDisplay: (int v){whatDisplay=v;setState(() {});},)
+            ExecutionDiagram(isPipelined: 2,updateDisplay: (int v){whatDisplay=v;setState(() {});},)
           ],
         ),
       ),
@@ -4169,7 +4169,7 @@ class solvePipelinedWithCaches {
 }
 
 class ExecutionDiagram extends StatefulWidget {
-  bool? isPipelined;
+  int? isPipelined;
   Function(int v)? updateDisplay;
   ExecutionDiagram({Key? key,required this.isPipelined, required this.updateDisplay});
 
@@ -4213,7 +4213,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
             color: Colors.cyan[200],
             borderRadius: const BorderRadius.all(Radius.circular(10.0))),
         child: Stack(children: <Widget>[
-          if(widget.isPipelined!)
+          if(widget.isPipelined! != 0)
             Row(
               children: [
                 Container(height: 700,width: 200,child: const Text('Fetch',style: TextStyle(fontWeight: FontWeight.bold,fontSize: 30),textAlign: TextAlign.center,),),
@@ -4242,7 +4242,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                   const SizedBox(height: 70,),
                   createBox('PC', 1, () {return null;}, 50, 80), // PC
                   const SizedBox(height: 100,),
-                  createBox('Instruction\nMemory', 0, () {return null;}, 180, 130),
+                  createBox((widget.isPipelined! != 2)?'Instruction\nMemory':'Instruction\nMemory\nwith\nCaches', 0, () {return null;}, 180, 130),
                 ],
               ),//Fetch
               Column(
@@ -4277,7 +4277,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
                 children: [
                   const SizedBox(width: 200,),
                   const SizedBox(height: 400,),
-                  createBox('DATA\nMEMORY', 0, () { }, 160, 170),
+                  createBox((widget.isPipelined! != 2)?'Data\nMemory':'Data\nMemory\nwith\nCaches', 0, () { }, 160, 170),
                 ],
               ),//Memory
               Column(
@@ -4290,7 +4290,7 @@ class _ExecutionDiagramState extends State<ExecutionDiagram> {
               ),//Writeback
             ],
           ),
-          if(widget.isPipelined!)
+          if(widget.isPipelined! != 0)
             Row(
               children: [
                 const SizedBox(width: 180,),
