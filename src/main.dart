@@ -3099,7 +3099,8 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
   }
 }
 class Cache{
-  int policy = 0, //random,lru,fifo
+  int row=8,col=8,size=64,
+      policy = 0, //random,lru,fifo
       mapping = 0,
       way = 2;
   var cache ;
@@ -3119,6 +3120,9 @@ class Cache{
   bool INSorMEM=false;
 
   Cache(int row,int col,int policy,int mapping,int way){
+    this.row=row;
+    this.col=col;
+    this.size=size;
     this.policy=policy;
     this.mapping=mapping;
     this.way=way;
@@ -3138,6 +3142,9 @@ class Cache{
     penalty=20;
     hittime=1;
     totalstalls=0;
+    this.row=row;
+    this.col=col;
+    this.size=row*col;
     this.cache=List.generate(row, (i) => List.filled(col, 0, growable: false),growable: false);
     this.dirty = List.generate(row, (i) => 0, growable: false);
     this.status = List.generate(row, (i) => 0, growable: false);
@@ -3159,13 +3166,13 @@ class Cache{
     if(INSorMEM==true)solvePipelinedWithCaches.INScold.add(tagelement);
     else solvePipelinedWithCaches.MEMcold.add(tagelement);
     //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-    int base = block * (4 * solvePipelinedWithCaches.col);
+    int base = block * (4 * this.col);
     //if (dirty[i] == 1) writeBlock(i);
     tag[i] = tagelement;
     filled[i] = 1;
     dirty[i] = 0;
-    if (policy == 1 || policy == 2) status[i] = solvePipelinedWithCaches.col - 1;
-    for (int j = 0; j < solvePipelinedWithCaches.col; j++) {
+    if (policy == 1 || policy == 2) status[i] = this.col - 1;
+    for (int j = 0; j < this.col; j++) {
       if(INSorMEM==false)
         cache[i][j] = solvePipelinedWithCaches.MEM[base + (4 * j)] ?? 0;
       else
@@ -3176,17 +3183,17 @@ class Cache{
   int getnumber(int address,bool cacheop,int data) {
     this.accesses++;//|||||||||||||||||||||||||
 
-    int block = address ~/ (4 * solvePipelinedWithCaches.col);
-    int offset = address & ((4 * solvePipelinedWithCaches.col) - 1);
+    int block = address ~/ (4 * this.col);
+    int offset = address & ((4 * this.col) - 1);
     offset = offset >> 2;
-    int index = block & (solvePipelinedWithCaches.row - 1);
-    int tagelement = block ~/ (solvePipelinedWithCaches.row);
+    int index = block & (this.row - 1);
+    int tagelement = block ~/ (this.row);
     ///////////////1:-     DIRECT MAPPING     //////////////
     if (mapping == 0) {
       if (tag[index] != tagelement) {
 
-        if(INSorMEM==true)solvePipelinedWithCaches.INSconflict.add((tag[index]*solvePipelinedWithCaches.row)+index);
-        else solvePipelinedWithCaches.MEMconflict.add((tag[index]*solvePipelinedWithCaches.row)+index);
+        if(INSorMEM==true)solvePipelinedWithCaches.INSconflict.add((tag[index]*this.row)+index);
+        else solvePipelinedWithCaches.MEMconflict.add((tag[index]*this.row)+index);
 
         replace(index, block, tagelement);}
       else this.hits++;//|||||||||||||||||||||||
@@ -3204,13 +3211,13 @@ class Cache{
     else if (mapping == 1) {
       //////////////////////////////////////finding current block in cache////////////////////////////////
       int statusBit = 0;
-      for (int i = 0; i < solvePipelinedWithCaches.row; i++) {
+      for (int i = 0; i < this.row; i++) {
         if (filled[i] == 1) statusBit++;
         if (tag[i] == block) {
           this.hits++;//|||||||||||||||||||||||||
           if (policy == 1) {
             statusBit = 0;
-            for (int j = 0; j < solvePipelinedWithCaches.row; j++) {
+            for (int j = 0; j < this.row; j++) {
               if (status[j] > status[i]) status[j]--;
               if (filled[j] == 1) statusBit++;
             }
@@ -3226,7 +3233,7 @@ class Cache{
         }
       }
       ///////////////////////////////////chaecking for empty space in cache for new block////////////////////////
-      for (int i = 0; i < solvePipelinedWithCaches.row; i++) {
+      for (int i = 0; i < this.row; i++) {
         if (filled[i] == 0) {
           //add condition for new status number
           replace(i, block, block);
@@ -3244,7 +3251,7 @@ class Cache{
       ///// 1:-        Random Policy
       if (policy == 0) {
         Random random = new Random();
-        int i = random.nextInt(solvePipelinedWithCaches.row);
+        int i = random.nextInt(this.row);
 
         if(INSorMEM==true)solvePipelinedWithCaches.INSconflict.add(tag[i]);
         else solvePipelinedWithCaches.MEMconflict.add(tag[i]);
@@ -3261,7 +3268,7 @@ class Cache{
       ///// 2:-        LRU policy or FIFO policy
       else {
         int index = 0;
-        for (int i = 0; i < solvePipelinedWithCaches.row; i++) {
+        for (int i = 0; i < this.row; i++) {
           if (status[i] > 0)
             status[i]--;
           else
@@ -3272,7 +3279,7 @@ class Cache{
         else solvePipelinedWithCaches.MEMconflict.add(tag[index]);
 
         replace(index, block, block);
-        status[index] = solvePipelinedWithCaches.row - 1;
+        status[index] = this.row - 1;
         if(cacheop==true){
           solvePipelinedWithCaches.MEM[address]=data;
           cache[index][offset]=data;
@@ -3284,8 +3291,8 @@ class Cache{
     }
     ///////////////////////////////////////////SET associative////////////////////////////////////////
     else {
-      int set = way * (block % (solvePipelinedWithCaches.row ~/ way));
-      tagelement = block ~/ (solvePipelinedWithCaches.row ~/ way);
+      int set = way * (block % (this.row ~/ way));
+      tagelement = block ~/ (this.row ~/ way);
 
       int statusBit = 0;
 
@@ -3334,8 +3341,8 @@ class Cache{
         Random random = new Random();
         int i = set + random.nextInt(way);
 
-        if(INSorMEM==true)solvePipelinedWithCaches.INSconflict.add((tag[i]*(solvePipelinedWithCaches.row ~/ way))+set);
-        else solvePipelinedWithCaches.MEMconflict.add((tag[i]*(solvePipelinedWithCaches.row ~/ way))+set);
+        if(INSorMEM==true)solvePipelinedWithCaches.INSconflict.add((tag[i]*(this.row ~/ way))+set);
+        else solvePipelinedWithCaches.MEMconflict.add((tag[i]*(this.row ~/ way))+set);
 
         replace(i, block, tagelement);
         if(cacheop==true){
@@ -3356,8 +3363,8 @@ class Cache{
             index = i;
         }
 
-        if(INSorMEM==true)solvePipelinedWithCaches.INSconflict.add((tag[index]*(solvePipelinedWithCaches.row ~/ way))+set);
-        else solvePipelinedWithCaches.MEMconflict.add((tag[index]*(solvePipelinedWithCaches.row ~/ way))+set);
+        if(INSorMEM==true)solvePipelinedWithCaches.INSconflict.add((tag[index]*(this.row ~/ way))+set);
+        else solvePipelinedWithCaches.MEMconflict.add((tag[index]*(this.row ~/ way))+set);
 
         replace(index, block, tagelement);
         status[index] = way - 1;
@@ -3376,10 +3383,7 @@ class Cache{
 class solvePipelinedWithCaches {
   static var datacache;
   static var inscache;
-  static int row = 8,
-      col = 8,
-      size = 64,
-      stop=0,
+  static int row=8,col=8,size=64, stop=0,
       instructCount=0,
       dataCount=0,
       controlCount=0,
