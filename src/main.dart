@@ -2454,22 +2454,28 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
   PlatformFile? myFile;
 
   void myFilePicker() async {
+    solvePipelinedWithCaches.refresh();
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['mc'],
     );
-    if (result == null) return;
+    if (result == null) {
+      return;
+    }
     myFile = result.files.single;
     String strPath =
         '${Directory(myFile!.path!).parent.path}\\${basenameWithoutExtension(myFile!.path!)}_PipelinedWithCaches.txt';
     File outputFile = File(strPath);
     File inputFile = File(myFile!.name);
+    if(solvePipelinedWithCaches.datacache==null){
+      solvePipelinedWithCaches.datacache = new Cache(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col,0,0,2);
+      solvePipelinedWithCaches.inscache = new Cache(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col,0,0,2);
+    }
+    solvePipelinedWithCaches.datacache.Refresh(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col);
+    solvePipelinedWithCaches.inscache.Refresh(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col);
 
-    solvePipelinedWithCaches.datacache=new Cache(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col);
-    solvePipelinedWithCaches.inscache=new Cache(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col);
     if (solvePipelinedWithCaches.row % solvePipelinedWithCaches.inscache.way != 0 || solvePipelinedWithCaches.inscache.way <= 0 || solvePipelinedWithCaches.row % solvePipelinedWithCaches.datacache.way != 0 || solvePipelinedWithCaches.datacache.way <= 0) {
       print("invalid inputs to cache.");
-      exit(0);
     }
     solvePipelinedWithCaches.inscache.INSorMEM=true;
 
@@ -2912,17 +2918,70 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
                             },
                             child: Text('${solvePipelinedWithCaches.row*solvePipelinedWithCaches.col} word \$')),
                         ElevatedButton(
-                            //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.refresh();
+                              String strPath =
+                                  '${Directory(myFile!.path!).parent.path}\\${basenameWithoutExtension(myFile!.path!)}_PipelinedWithCaches.txt';
+                              File outputFile = File(strPath);
+                              File inputFile = File(myFile!.name);
+
+                              solvePipelinedWithCaches.datacache.Refresh(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col);
+                              solvePipelinedWithCaches.inscache.Refresh(solvePipelinedWithCaches.row,solvePipelinedWithCaches.col);
+
+                              if (solvePipelinedWithCaches.row % solvePipelinedWithCaches.inscache.way != 0 || solvePipelinedWithCaches.inscache.way <= 0 || solvePipelinedWithCaches.row % solvePipelinedWithCaches.datacache.way != 0 || solvePipelinedWithCaches.datacache.way <= 0) {
+                                print("invalid inputs to cache.");
+                              }
+                              solvePipelinedWithCaches.inscache.INSorMEM=true;
+
+                              List<String> str=inputFile.readAsLinesSync();
+                              for(int i=0;i<str.length;i++)
+                              {solvePipelinedWithCaches.n.add(str[i]);}
+                              solvePipelinedWithCaches.RF[2]=2147483644;
+                              solvePipelinedWithCaches.buffer.add(new BTB(-1,-1,false));
+                              solvePipelinedWithCaches.load_progmem();
+                              solvePipelinedWithCaches.run_riscvsim(outputFile);
+                              displayStep = 0;
+                              showDialog(
+                                context: context,
+                                builder: (BuildContext context) => AlertDialog(
+                                  title: const Text('Information'),
+                                  content: const Text(
+                                      'If a file is selected, the output file will be created in the same directory.'),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, 'OK'),
+                                      child: const Text('OK'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              setState((){});
+                            },
+                            child: const Text('Compile')),
+                      ],
+                    )
+                ),
+                const SizedBox(
+                  height: 5,
+                ),
+                if(myFile != null)Container(
+                    width: 500,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Text("D\$:",style: TextStyle(fontWeight: FontWeight.bold),),
+                        ElevatedButton(
+                            style: ElevatedButton.styleFrom(primary:Colors.deepPurpleAccent),
                             onPressed: (){
                               solvePipelinedWithCaches.datacache.mapping=(solvePipelinedWithCaches.datacache.mapping+1)%3;
                               setState((){});
                             },
-                            child: Text((solvePipelinedWithCaches.datacache.mapping==0)?'Direct Map':
-                                        (solvePipelinedWithCaches.datacache.mapping==1)?'Fully Assoc.':
-                                         'Set Assoc.')
+                            child: Text((solvePipelinedWithCaches.datacache.mapping==0)?'DM':
+                            (solvePipelinedWithCaches.datacache.mapping==1)?'FA':
+                            'SA')
                         ),
                         if(solvePipelinedWithCaches.datacache.mapping == 2)ElevatedButton(
-                          //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            style: ElevatedButton.styleFrom(primary:Colors.deepPurpleAccent),
                             onPressed: (){
                               solvePipelinedWithCaches.datacache.way *= 2;
                               if(solvePipelinedWithCaches.datacache.way == 32) solvePipelinedWithCaches.datacache.way = 2;
@@ -2930,13 +2989,41 @@ class _PipelinedWithCachesState extends State<PipelinedWithCaches> {
                             },
                             child: Text('${solvePipelinedWithCaches.datacache.way} - way')),
                         if(solvePipelinedWithCaches.datacache.mapping != 0)ElevatedButton(
-                          //style: ElevatedButton.styleFrom(primary:(solvePipelinedWithCaches.knob2)?Colors.green:Colors.redAccent),
+                            style: ElevatedButton.styleFrom(primary:Colors.deepPurpleAccent),
                             onPressed: (){
                               solvePipelinedWithCaches.datacache.policy=(solvePipelinedWithCaches.datacache.policy+1)%3;
                               setState((){});
                             },
                             child: Text((solvePipelinedWithCaches.datacache.policy==0)?'Random':
                             (solvePipelinedWithCaches.datacache.policy==1)?'LRU':
+                            'FIFO')),
+                        Text("I\$:",style: TextStyle(fontWeight: FontWeight.bold),),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(primary:Colors.pinkAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.inscache.mapping=(solvePipelinedWithCaches.inscache.mapping+1)%3;
+                              setState((){});
+                            },
+                            child: Text((solvePipelinedWithCaches.inscache.mapping==0)?'DM':
+                            (solvePipelinedWithCaches.inscache.mapping==1)?'FA':
+                            'SA')
+                        ),
+                        if(solvePipelinedWithCaches.inscache.mapping == 2)ElevatedButton(
+                            style: ElevatedButton.styleFrom(primary:Colors.pinkAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.inscache.way *= 2;
+                              if(solvePipelinedWithCaches.inscache.way == 32) solvePipelinedWithCaches.inscache.way = 2;
+                              setState((){});
+                            },
+                            child: Text('${solvePipelinedWithCaches.inscache.way} - way')),
+                        if(solvePipelinedWithCaches.inscache.mapping != 0)ElevatedButton(
+                            style: ElevatedButton.styleFrom(primary:Colors.pinkAccent),
+                            onPressed: (){
+                              solvePipelinedWithCaches.inscache.policy=(solvePipelinedWithCaches.inscache.policy+1)%3;
+                              setState((){});
+                            },
+                            child: Text((solvePipelinedWithCaches.inscache.policy==0)?'Random':
+                            (solvePipelinedWithCaches.inscache.policy==1)?'LRU':
                             'FIFO')),
                       ],
                     )
@@ -3030,7 +3117,18 @@ class Cache{
       hittime=1,
       totalstalls=0;
   bool INSorMEM=false;
-  Cache(int row,int col){
+
+  Cache(int row,int col,int policy,int mapping,int way){
+    this.policy=policy;
+    this.mapping=mapping;
+    this.way=way;
+    this.cache=List.generate(row, (i) => List.filled(col, 0, growable: false),growable: false);
+    this.dirty = List.generate(row, (i) => 0, growable: false);
+    this.status = List.generate(row, (i) => 0, growable: false);
+    this.filled = List.generate(row, (i) => 0, growable: false);
+    this.tag = List.generate(row, (i) => -1, growable: false);
+  }
+  void Refresh(int row,int col){
     this.cache=List.generate(row, (i) => List.filled(col, 0, growable: false),growable: false);
     this.dirty = List.generate(row, (i) => 0, growable: false);
     this.status = List.generate(row, (i) => 0, growable: false);
@@ -3310,6 +3408,88 @@ class solvePipelinedWithCaches {
   static Map<int,int> INS=Map<int,int>();
   static List <BTB> buffer=[];
   //|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+  static void refresh(){
+        stop=0;
+        instructCount=0;
+        dataCount=0;
+        controlCount=0;
+        stallCount=0;
+        dataHazard=0;
+        controlHazard=0;
+        misPredict=0;
+        dataStalls=0;
+        controlStalls=0;
+        INScold={};
+        MEMcold={};
+        INSconflict={};
+        MEMconflict={};
+    IFDE={};
+    DEEX={};
+    EXMA={};
+    MAWB={};
+    displayTxt='CYCLES ELAPSED: 0\n\n';
+    outputReg = ['0${'\t0'*31}'];
+    pc = 0;
+    count=0;
+    btarget=0;
+    instructCount=0;
+    dataCount=0;
+    controlCount=0;
+    stallCount=0;
+    dataHazard=0;
+    controlHazard=0;
+    misPredict=0;
+    dataStalls=0;
+    controlStalls=0;
+
+    knob1=true;
+    running=true;
+    isBranchtaken=false;
+    loadHazard=false;
+    n=[];
+    for (int i=0;i<RF.length;i++){
+      RF[i]=0;
+    }
+    for (int i=0;i<b.length;i++){
+      b[i]=0;
+    }
+    for (int i=0;i<im.length;i++){
+      im[i]=0;
+    }
+    for (int i=0;i<t.length;i++){
+      t[i]=0;
+    }
+    for (int i=0;i<if_de.length;i++){
+      if_de[i]=0;
+    }
+    for (int i=0;i<t1.length;i++){
+      t1[i]=0;
+    }
+    for (int i=0;i<ex_ma.length;i++){
+      ex_ma[i]=0;
+    }
+    for (int i=0;i<t2.length;i++){
+      t2[i]=0;
+    }
+    for (int i=0;i<de_ex.length;i++){
+      de_ex[i]=0;
+    }
+    for (int i=0;i<t3.length;i++){
+      t3[i]=0;
+    }
+    for (int i=0;i<ma_wb.length;i++){
+      ma_wb[i]=0;
+    }
+    for (int i=0;i<t4.length;i++){
+      t4[i]=0;
+    }
+    MEM = {};
+    INS={};
+    buffer=[];
+
+  }
+
   static void dec2bin(int value) {
     if (value < 0) value = (1 << 32) + value;
 
@@ -4026,6 +4206,10 @@ class solvePipelinedWithCaches {
     myOutFile.writeAsStringSync("\nData instructions:  ${dataCount}\nControl instructions:  ${controlCount}\nStalls count:  ${stallCount}", mode: FileMode.append);
     myOutFile.writeAsStringSync("\nData hazards count:  ${dataHazard}\nControl hazards count:  ${controlHazard}\nBranch mispredictions count:  ${misPredict}", mode: FileMode.append);
     myOutFile.writeAsStringSync("\nNumber of stalls due to data hazards:  ${dataStalls}\nNumber of stalls due to control hazards:  ${controlStalls}.", mode: FileMode.append);
+    myOutFile.writeAsStringSync("\n\nDATA CACHE STATS:\nNumber of accesses:${datacache.accesses}\nNumber of hits: ${datacache.hits}\nNumber of misses:${datacache.misses}", mode: FileMode.append);
+    myOutFile.writeAsStringSync("\nNumber of cold misses: ${datacache.coldmisses}\nNumber of capacity misses: ${datacache.capacitymisses}\nNumber of conflict misses: ${datacache.conflictmisses}", mode: FileMode.append);
+    myOutFile.writeAsStringSync("\n\nINS CACHE STATS:\nNumber of accesses:${inscache.accesses}\nNumber of hits: ${inscache.hits}\nNumber of misses:${inscache.misses}", mode: FileMode.append);
+    myOutFile.writeAsStringSync("\nNumber of cold misses: ${inscache.coldmisses}\nNumber of capacity misses: ${inscache.capacitymisses}\nNumber of conflict misses: ${inscache.conflictmisses}", mode: FileMode.append);
   }
   static bool src1Hazard(int write,int read) {
     int opcode1=write&0x7F,opcode2=read&0x7F;
