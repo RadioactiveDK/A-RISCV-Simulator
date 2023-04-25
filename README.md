@@ -1,4 +1,4 @@
-# RISCV-32I Simulator
+# RISCV-32I SIMULATOR
 ```
 Table of contents
 - Directory Structure
